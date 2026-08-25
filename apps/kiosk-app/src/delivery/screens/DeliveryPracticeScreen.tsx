@@ -50,10 +50,14 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
       wrongAction();
       return;
     }
-    if (mission === "store") {
+    if (mission === "store" || mission === "done") {
       setPage("stores");
-      setMissionVisible(true);
-      speak("치킨 가게 목록으로 돌아왔습니다. 배달팁 0원이고 약 20분 걸리는 스마트치킨 은평점을 눌러 주세요.");
+      setMissionVisible(mission === "store");
+      speak(
+        mission === "store"
+          ? "치킨 가게 목록으로 돌아왔습니다. 배달팁 0원이고 약 20분 걸리는 스마트치킨 은평점을 눌러 주세요."
+          : "치킨 가게 목록을 다시 열었습니다. 가게 정보를 살펴보세요.",
+      );
       return;
     }
     if (mission !== "category") {
@@ -67,6 +71,11 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
   };
 
   const selectStore = (store: ChickenStore) => {
+    if (mission === "done") {
+      speak(`${store.name} 가게를 선택했습니다.`);
+      Alert.alert("가게 선택", `${store.name}을(를) 선택했습니다.`);
+      return;
+    }
     if (mission !== "store" || store.id !== "smart-chicken") {
       wrongAction();
       return;
