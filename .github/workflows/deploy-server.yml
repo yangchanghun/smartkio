@@ -1,0 +1,23 @@
+name: Deploy API server
+on:
+  push: {branches: [main]}
+  workflow_dispatch:
+concurrency: {group: smartkio-production, cancel-in-progress: false}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env: {SSH_PRIVATE_KEY: '${{ secrets.SSH_PRIVATE_KEY }}', SSH_KNOWN_HOSTS: '${{ secrets.SSH_KNOWN_HOSTS }}'}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Upload and restart
+        run: |
+          tar --exclude=.git --exclude=node_modules --exclude=dist --exclude=.env.production -czf /tmp/smartkio.tgz .
+          scp -i ~/.ssh/deploy_key -P '${{ secrets.SSH_PORT }}' /tmp/smartkio.tgz '${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/smartkio.tgz'
+          ssh -i ~/.ssh/deploy_key -p '${{ secrets.SSH_PORT }}' '${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}' 'mkdir -p /opt/smartkio && tar -xzf /tmp/smartkio.tgz -C /opt/smartkio && cd /opt/smartkio && docker compose -f compose.production.yml up -d --build --remove-orphans'

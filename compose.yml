@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: smartkio
+      POSTGRES_USER: smartkio
+      POSTGRES_PASSWORD: smartkio_local_only
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartkio -d smartkio"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./apps/backend
+    env_file: ./apps/backend/.env
+    command: sh -c "python manage.py migrate && python manage.py seed_demo && python manage.py runserver 0.0.0.0:8000"
+    volumes: [./apps/backend:/app]
+    environment:
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: local-development-only
+      DJANGO_ALLOWED_HOSTS: "*"
+      DJANGO_CORS_ALLOWED_ORIGINS: http://localhost:5173
+      POSTGRES_DB: smartkio
+      POSTGRES_USER: smartkio
+      POSTGRES_PASSWORD: smartkio_local_only
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    ports: ["8000:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+  admin-web:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes: [./apps/admin-web:/app]
+    environment: {VITE_API_URL: http://localhost:8000}
+    ports: ["5173:5173"]
+volumes:
+  postgres_data:

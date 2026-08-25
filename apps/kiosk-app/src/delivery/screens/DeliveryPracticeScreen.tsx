@@ -1,0 +1,59 @@
+import { useEffect, useState } from "react";
+import { Alert, SafeAreaView, StyleSheet, View } from "react-native";
+import * as Speech from "expo-speech";
+import { DeliveryMissionModal } from "../components/DeliveryMissionModal";
+import { SAMPLE_ADDRESSES } from "../data/addresses";
+import type { DeliveryAddress } from "../types";
+import { DeliveryAddressScreen } from "./DeliveryAddressScreen";
+import { DeliveryHomeScreen } from "./DeliveryHomeScreen";
+
+export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; token: string }) {
+  const [page, setPage] = useState<"home" | "address">("home");
+  const [address, setAddress] = useState(SAMPLE_ADDRESSES[0]);
+  const [introVisible, setIntroVisible] = useState(true);
+
+  const speak = (message: string) => {
+    void Speech.stop();
+    Speech.speak(message, { language: "ko-KR", rate: 0.88, pitch: 1 });
+  };
+
+  useEffect(() => () => { void Speech.stop(); }, []);
+
+  const openAddress = () => {
+    setPage("address");
+    speak("주소 설정 화면입니다. 목록에서 배달받을 주소를 하나 선택해 주세요.");
+  };
+
+  const selectAddress = (selected: DeliveryAddress) => {
+    setAddress(selected);
+    setPage("home");
+    speak(`${selected.name} 주소를 선택했습니다. 주소 설정 미션을 완료했습니다.`);
+    Alert.alert("미션 완료", `${selected.name}(으)로 배달 주소를 설정했습니다.`);
+  };
+
+  return (
+    <SafeAreaView style={s.safe}>
+      <View style={s.shell}>
+        {page === "home" ? (
+          <DeliveryHomeScreen address={address} onOpenAddress={openAddress} onBack={onBack} />
+        ) : (
+          <DeliveryAddressScreen addresses={SAMPLE_ADDRESSES} selectedId={address.id} onSelect={selectAddress} onBack={() => setPage("home")} token={token} />
+        )}
+      </View>
+      <DeliveryMissionModal
+        visible={introVisible}
+        title="배달 주소 설정하기"
+        description="홈 화면 맨 위에 표시된 주소를 누른 다음, 배달받을 주소를 하나 선택해 보세요."
+        onConfirm={() => {
+          setIntroVisible(false);
+          speak("첫 번째 미션입니다. 홈 화면 맨 위에 표시된 배달 주소를 눌러 주세요.");
+        }}
+      />
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: "#d7d7d7" },
+  shell: { flex: 1, alignItems: "center" },
+});
