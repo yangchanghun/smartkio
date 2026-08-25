@@ -46,7 +46,17 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
   };
 
   const selectCategory = (category: string) => {
-    if (mission !== "category" || category !== "치킨") {
+    if (category !== "치킨") {
+      wrongAction();
+      return;
+    }
+    if (mission === "store") {
+      setPage("stores");
+      setMissionVisible(true);
+      speak("치킨 가게 목록으로 돌아왔습니다. 배달팁 0원이고 약 20분 걸리는 스마트치킨 은평점을 눌러 주세요.");
+      return;
+    }
+    if (mission !== "category") {
       wrongAction();
       return;
     }
