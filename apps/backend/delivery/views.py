@@ -60,9 +60,20 @@ def address_search(request):
     geocode_payload = {}
     local_payload = {}
     upstream_errors = []
-    for source, url in (("local", local_url), ("geocode", geocode_url)):
+    requests = [("geocode", geocode_url, client_id, client_secret)]
+    if settings.NAVER_API_HUB_CLIENT_ID and settings.NAVER_API_HUB_CLIENT_SECRET:
+        requests.insert(
+            0,
+            (
+                "local",
+                local_url,
+                settings.NAVER_API_HUB_CLIENT_ID,
+                settings.NAVER_API_HUB_CLIENT_SECRET,
+            ),
+        )
+    for source, url, source_client_id, source_client_secret in requests:
         try:
-            payload = _naver_request(url, client_id, client_secret)
+            payload = _naver_request(url, source_client_id, source_client_secret)
             if source == "local":
                 local_payload = payload
             else:

@@ -11,7 +11,12 @@ from rest_framework.test import APITestCase
 from catalog.models import KioskAccount
 
 
-@override_settings(NAVER_MAPS_CLIENT_ID="test-id", NAVER_MAPS_CLIENT_SECRET="test-secret")
+@override_settings(
+    NAVER_MAPS_CLIENT_ID="test-maps-id",
+    NAVER_MAPS_CLIENT_SECRET="test-maps-secret",
+    NAVER_API_HUB_CLIENT_ID="test-hub-id",
+    NAVER_API_HUB_CLIENT_SECRET="test-hub-secret",
+)
 class AddressSearchTests(APITestCase):
     def setUp(self):
         user = User.objects.create_user(username="kiosk", password="test")
