@@ -10,7 +10,8 @@ import { DeliveryHomeScreen } from "./DeliveryHomeScreen";
 export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; token: string }) {
   const [page, setPage] = useState<"home" | "address">("home");
   const [address, setAddress] = useState(SAMPLE_ADDRESSES[0]);
-  const [introVisible, setIntroVisible] = useState(true);
+  const [mission, setMission] = useState<"address" | "category" | "done">("address");
+  const [missionVisible, setMissionVisible] = useState(true);
 
   const speak = (message: string) => {
     void Speech.stop();
@@ -27,26 +28,63 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
   const selectAddress = (selected: DeliveryAddress) => {
     setAddress(selected);
     setPage("home");
-    speak(`${selected.name} 주소를 선택했습니다. 주소 설정 미션을 완료했습니다.`);
-    Alert.alert("미션 완료", `${selected.name}(으)로 배달 주소를 설정했습니다.`);
+    setMission("category");
+    setMissionVisible(true);
+    speak(`${selected.name} 주소를 선택했습니다. 첫 번째 미션을 완료했습니다. 이제 치킨 카테고리를 선택해 보세요.`);
   };
+
+  const wrongAction = () => {
+    const message = mission === "address"
+      ? "지금은 배달 주소를 설정하는 미션입니다. 화면 맨 위의 주소를 눌러 주세요."
+      : "지금은 음식 종류를 선택하는 미션입니다. 치킨 카테고리를 찾아 눌러 주세요.";
+    Alert.alert("현재 미션을 확인해 주세요", message);
+    speak(message);
+  };
+
+  const selectCategory = (category: string) => {
+    if (mission !== "category" || category !== "치킨") {
+      wrongAction();
+      return;
+    }
+    setMission("done");
+    speak("치킨 카테고리를 선택했습니다. 두 번째 미션을 완료했습니다.");
+    Alert.alert("미션 완료", "치킨 카테고리를 선택했습니다.");
+  };
+
+  const missionCopy = mission === "address"
+    ? {
+        title: "1. 배달 주소 설정하기",
+        description: "홈 화면 맨 위에 표시된 주소를 누른 다음, 배달받을 주소를 하나 선택해 보세요.",
+        voice: "첫 번째 미션입니다. 홈 화면 맨 위에 표시된 배달 주소를 눌러 주세요.",
+      }
+    : {
+        title: "2. 음식 종류 선택하기",
+        description: "음식배달 카테고리 목록에서 치킨을 찾아 눌러 보세요.",
+        voice: "두 번째 미션입니다. 음식 종류에서 치킨 카테고리를 찾아 눌러 주세요.",
+      };
 
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.shell}>
         {page === "home" ? (
-          <DeliveryHomeScreen address={address} onOpenAddress={openAddress} onBack={onBack} />
+          <DeliveryHomeScreen
+            address={address}
+            onOpenAddress={mission === "address" ? openAddress : wrongAction}
+            onBack={onBack}
+            onSelectCategory={selectCategory}
+            onWrongPress={wrongAction}
+          />
         ) : (
           <DeliveryAddressScreen addresses={SAMPLE_ADDRESSES} selectedId={address.id} onSelect={selectAddress} onBack={() => setPage("home")} token={token} />
         )}
       </View>
       <DeliveryMissionModal
-        visible={introVisible}
-        title="배달 주소 설정하기"
-        description="홈 화면 맨 위에 표시된 주소를 누른 다음, 배달받을 주소를 하나 선택해 보세요."
+        visible={missionVisible && mission !== "done"}
+        title={missionCopy.title}
+        description={missionCopy.description}
         onConfirm={() => {
-          setIntroVisible(false);
-          speak("첫 번째 미션입니다. 홈 화면 맨 위에 표시된 배달 주소를 눌러 주세요.");
+          setMissionVisible(false);
+          speak(missionCopy.voice);
         }}
       />
     </SafeAreaView>

@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { DeliveryAddress } from "../types";
 import { DeliveryBottomNav } from "../components/DeliveryBottomNav";
 
@@ -11,13 +11,15 @@ export function DeliveryHomeScreen({
   address,
   onOpenAddress,
   onBack,
+  onSelectCategory,
+  onWrongPress,
 }: {
   address: DeliveryAddress;
   onOpenAddress: () => void;
   onBack: () => void;
+  onSelectCategory: (category: string) => void;
+  onWrongPress: () => void;
 }) {
-  const guide = () => Alert.alert("주소 설정 미션", "화면 맨 위의 배달 주소를 눌러 주세요.");
-
   return (
     <View style={s.page}>
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
@@ -29,12 +31,12 @@ export function DeliveryHomeScreen({
               <Text style={s.chevron}>⌄</Text>
             </Pressable>
             <View style={s.headerActions}>
-              <Pressable onPress={guide}><Text style={s.headerIcon}>♢</Text></Pressable>
-              <Pressable onPress={guide}><Text style={s.headerIcon}>♧</Text></Pressable>
-              <Pressable onPress={guide}><Text style={s.headerIcon}>🛒</Text></Pressable>
+              <Pressable onPress={onWrongPress}><Text style={s.headerIcon}>♢</Text></Pressable>
+              <Pressable onPress={onWrongPress}><Text style={s.headerIcon}>♧</Text></Pressable>
+              <Pressable onPress={onWrongPress}><Text style={s.headerIcon}>🛒</Text></Pressable>
             </View>
           </View>
-          <Pressable style={s.search} onPress={guide}>
+          <Pressable style={s.search} onPress={onWrongPress}>
             <Text style={s.searchPlaceholder}>먹고 싶은 메뉴를 검색해 보세요</Text>
             <Text style={s.searchIcon}>⌕</Text>
           </Pressable>
@@ -51,20 +53,20 @@ export function DeliveryHomeScreen({
         <View style={s.serviceCard}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.serviceTabs}>
             {['음식배달', '픽업', '장보기·쇼핑', '선물하기', '혜택모아보기'].map((item, index) => (
-              <Pressable key={item} onPress={index === 0 ? undefined : guide} style={[s.serviceTab, index === 0 && s.serviceTabActive]}>
+              <Pressable key={item} onPress={index === 0 ? undefined : onWrongPress} style={[s.serviceTab, index === 0 && s.serviceTabActive]}>
                 <Text style={[s.serviceText, index === 0 && s.serviceTextActive]}>{item}</Text>
               </Pressable>
             ))}
           </ScrollView>
           <View style={s.categoryGrid}>
             {categories.map(([emoji, label]) => (
-              <Pressable key={label} style={s.category} onPress={guide}>
+              <Pressable key={label} style={s.category} onPress={() => onSelectCategory(label)}>
                 <View style={s.categoryIcon}><Text style={s.categoryEmoji}>{emoji}</Text></View>
                 <Text style={s.categoryLabel}>{label}</Text>
               </Pressable>
             ))}
           </View>
-          <Pressable style={s.more} onPress={guide}><Text style={s.moreText}><Text style={s.bold}>음식배달</Text>에서 더보기  ›</Text></Pressable>
+          <Pressable style={s.more} onPress={onWrongPress}><Text style={s.moreText}><Text style={s.bold}>음식배달</Text>에서 더보기  ›</Text></Pressable>
         </View>
 
         <View style={s.storeSection}>
@@ -80,7 +82,7 @@ export function DeliveryHomeScreen({
           </View>
         </View>
       </ScrollView>
-      <DeliveryBottomNav onWrongPress={guide} />
+      <DeliveryBottomNav onWrongPress={onWrongPress} />
     </View>
   );
 }
@@ -132,4 +134,3 @@ const s = StyleSheet.create({
   chip: { alignSelf: "flex-start", marginTop: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: "#e2fbf7" },
   chipText: { color: "#009a8d", fontSize: 11, fontWeight: "900" },
 });
-
