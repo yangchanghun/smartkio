@@ -48,3 +48,43 @@ class AddressSearchTests(APITestCase):
         self.assertEqual(response.data["total"], 1)
         self.assertNotIn("unused", response.data["results"][0])
 
+    @patch("delivery.views.urlopen")
+    def test_combines_local_places_before_geocoded_addresses(self, mocked_urlopen):
+        local_response = MagicMock()
+        local_response.read.return_value = json.dumps(
+            {
+                "items": [
+                    {
+                        "title": "<b>서울역</b>",
+                        "category": "교통,수송>기차역",
+                        "address": "서울특별시 용산구 동자동 43-205",
+                        "roadAddress": "서울특별시 용산구 한강대로 405",
+                        "mapx": "126.9707",
+                        "mapy": "37.5547",
+                    }
+                ]
+            }
+        ).encode()
+        geocode_response = MagicMock()
+        geocode_response.read.return_value = json.dumps(
+            {
+                "addresses": [
+                    {
+                        "roadAddress": "서울특별시",
+                        "jibunAddress": "서울특별시",
+                        "englishAddress": "Seoul",
+                        "x": "126.9783",
+                        "y": "37.5666",
+                    }
+                ]
+            }
+        ).encode()
+        mocked_urlopen.return_value.__enter__.side_effect = [local_response, geocode_response]
+
+        response = self.client.get("/api/delivery/addresses/search/?q=서울")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["total"], 2)
+        self.assertEqual(response.data["results"][0]["name"], "서울역")
+        self.assertEqual(response.data["results"][0]["source"], "local")
+        self.assertEqual(response.data["results"][1]["source"], "geocode")

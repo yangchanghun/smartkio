@@ -41,7 +41,7 @@ export function DeliveryAddressScreen({
     const roadAddress = result.roadAddress || result.jibunAddress;
     onSelect({
       id: `naver-${result.x}-${result.y}-${index}`,
-      name: roadAddress,
+      name: result.name || roadAddress,
       roadAddress,
       detail: "",
       request: "상세주소는 다음 단계에서 입력할 수 있어요.",
@@ -87,8 +87,10 @@ export function DeliveryAddressScreen({
           <Pressable key={`${result.x}-${result.y}-${index}`} style={s.addressRow} onPress={() => selectSearchResult(result, index)}>
             <Text style={s.pin}>⌖</Text>
             <View style={s.addressBody}>
-              <Text style={s.name}>{result.roadAddress || result.jibunAddress}</Text>
+              {!!result.name && <Text style={s.name}>{result.name}</Text>}
+              <Text style={result.name ? s.road : s.name}>{result.roadAddress || result.jibunAddress}</Text>
               {!!result.roadAddress && !!result.jibunAddress && <Text style={s.road}>지번 {result.jibunAddress}</Text>}
+              {!!result.category && <Text style={s.category}>{result.category}</Text>}
               <Text style={s.request}>이 주소를 선택하려면 눌러 주세요.</Text>
             </View>
           </Pressable>
@@ -142,6 +144,7 @@ const s = StyleSheet.create({
   selectedBadgeText: { color: "#1684e8", fontSize: 11, fontWeight: "900" },
   road: { marginTop: 9, fontSize: 16, lineHeight: 23, color: "#333" },
   request: { marginTop: 7, fontSize: 14, lineHeight: 20, color: "#999" },
+  category: { marginTop: 6, fontSize: 13, color: "#11a99e" },
   check: { width: 30, alignSelf: "center", fontSize: 29, fontWeight: "900" },
   loading: { marginTop: 45 },
   empty: { alignItems: "center", padding: 48 },
