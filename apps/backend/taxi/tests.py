@@ -36,6 +36,22 @@ class RoutePreviewTests(APITestCase):
                             "duration": 1090,
                             "fare": {"taxi": 12700, "toll": 0},
                         },
+                        "sections": [
+                            {
+                                "roads": [
+                                    {
+                                        "vertexes": [
+                                            126.8909,
+                                            37.5774,
+                                            126.9200,
+                                            37.5700,
+                                            126.9707,
+                                            37.5547,
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
                     }
                 ]
             }
@@ -50,4 +66,7 @@ class RoutePreviewTests(APITestCase):
         self.assertEqual(response.data["distance_meters"], 8420)
         self.assertEqual(response.data["duration_seconds"], 1090)
         self.assertEqual(response.data["taxi_fare"], 12700)
+        self.assertEqual(len(response.data["path"]), 3)
+        self.assertEqual(response.data["path"][0]["longitude"], 126.8909)
+        self.assertEqual(response.data["path"][-1]["latitude"], 37.5547)
         self.assertNotIn("routes", response.data)

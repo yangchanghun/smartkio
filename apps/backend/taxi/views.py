@@ -13,6 +13,27 @@ from catalog.views import KioskSessionPermission
 KAKAO_DIRECTIONS_URL = "https://apis-navi.kakaomobility.com/v1/directions"
 
 
+def _route_path(route, max_points=600):
+    points = []
+    for section in route.get("sections") or []:
+        for road in section.get("roads") or []:
+            vertices = road.get("vertexes") or []
+            for index in range(0, len(vertices) - 1, 2):
+                point = {
+                    "longitude": float(vertices[index]),
+                    "latitude": float(vertices[index + 1]),
+                }
+                if not points or point != points[-1]:
+                    points.append(point)
+    if len(points) <= max_points:
+        return points
+    step = (len(points) + max_points - 1) // max_points
+    sampled = points[::step]
+    if sampled[-1] != points[-1]:
+        sampled.append(points[-1])
+    return sampled
+
+
 def _coordinate(request, prefix):
     try:
         longitude = float(request.query_params[f"{prefix}_longitude"])
@@ -45,7 +66,7 @@ def route_preview(request):
             "origin": f"{origin[0]},{origin[1]}",
             "destination": f"{destination[0]},{destination[1]}",
             "priority": "RECOMMEND",
-            "summary": "true",
+            "summary": "false",
         }
     )
     upstream_request = Request(
@@ -78,11 +99,13 @@ def route_preview(request):
         )
 
     fare = summary.get("fare") or {}
+    path = _route_path(routes[0])
     return Response(
         {
             "distance_meters": int(summary.get("distance") or 0),
             "duration_seconds": int(summary.get("duration") or 0),
             "taxi_fare": int(fare.get("taxi") or 0),
             "toll_fare": int(fare.get("toll") or 0),
+            "path": path,
         }
     )

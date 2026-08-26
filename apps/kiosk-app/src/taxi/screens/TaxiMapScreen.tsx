@@ -65,13 +65,15 @@ export function TaxiMapScreen({
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.map}>
-        <KakaoMapView center={departure} />
+        <KakaoMapView center={departure} routePath={preview?.path} />
         <Pressable style={s.back} onPress={onBack} accessibilityLabel="뒤로 가기">
           <Text style={s.backText}>‹</Text>
         </Pressable>
-        <View style={s.pin}>
-          <Text style={s.pinText}>출발</Text>
-        </View>
+        {!preview ? (
+          <View style={s.pin}>
+            <Text style={s.pinText}>출발</Text>
+          </View>
+        ) : null}
         <Pressable style={s.locate} accessibilityLabel="현재 위치로 이동">
           <Text style={s.locateText}>⌖</Text>
         </Pressable>

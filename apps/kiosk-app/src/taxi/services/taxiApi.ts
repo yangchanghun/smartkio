@@ -7,6 +7,7 @@ export type TaxiRoutePreview = {
   duration_seconds: number;
   taxi_fare: number;
   toll_fare: number;
+  path: Array<{ latitude: number; longitude: number }>;
 };
 
 export async function getTaxiRoutePreview(
