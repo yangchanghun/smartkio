@@ -1,6 +1,9 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { DeliveryBottomNav } from "../components/DeliveryBottomNav";
 import { CHICKEN_STORES, type ChickenStore } from "../data/chickenStores";
+
+const friedChickenImage = require("../../../assets/delivery/chicken-fried.png");
+const spicyChickenImage = require("../../../assets/delivery/chicken-spicy.png");
 
 export function ChickenStoreListScreen({
   onBack,
@@ -45,8 +48,16 @@ export function ChickenStoreListScreen({
           <View key={store.id}>
             <Pressable style={s.store} onPress={() => onSelectStore(store)}>
               <View style={s.menuGrid}>
-                <View style={s.menuTile}><Text style={s.menuEmoji}>{store.menu[0]}</Text><Text style={s.menuLabel}>{store.menu[1]}</Text></View>
-                <View style={s.menuTile}><Text style={s.menuEmoji}>{store.menu[2]}</Text><Text style={s.menuLabel}>{store.menu[3]}</Text></View>
+                <View style={s.menuTile}>
+                  <Image source={friedChickenImage} style={s.menuImage} />
+                  <View style={s.menuShade} />
+                  <Text style={s.menuLabel}>{store.menu[1]}</Text>
+                </View>
+                <View style={s.menuTile}>
+                  <Image source={spicyChickenImage} style={s.menuImage} />
+                  <View style={s.menuShade} />
+                  <Text style={s.menuLabel}>{store.menu[3]}</Text>
+                </View>
               </View>
               <View style={s.freeTip}><Text style={s.freeTipText}>⚡ {store.deliveryFee}</Text></View>
               <View style={s.storeBody}>
@@ -89,9 +100,10 @@ const s = StyleSheet.create({
   sectionDesc: { paddingHorizontal: 20, marginTop: 6, marginBottom: 15, color: "#888" },
   store: { borderTopWidth: 1, borderColor: "#eee", paddingTop: 16, backgroundColor: "white" },
   menuGrid: { height: 155, marginHorizontal: 18, borderRadius: 18, overflow: "hidden", flexDirection: "row", backgroundColor: "#fff8e8" },
-  menuTile: { width: "50%", alignItems: "center", justifyContent: "center", borderRightWidth: 1, borderColor: "white" },
-  menuEmoji: { fontSize: 60 },
-  menuLabel: { marginTop: 5, fontWeight: "800", color: "#555" },
+  menuTile: { width: "50%", alignItems: "center", justifyContent: "flex-end", borderRightWidth: 1, borderColor: "white", overflow: "hidden" },
+  menuImage: { ...StyleSheet.absoluteFillObject, width: undefined, height: undefined, resizeMode: "cover" },
+  menuShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.22)" },
+  menuLabel: { marginBottom: 13, fontWeight: "900", color: "white", fontSize: 14, textShadowColor: "rgba(0,0,0,0.45)", textShadowRadius: 4 },
   freeTip: { marginHorizontal: 18, backgroundColor: "#3613dc", paddingHorizontal: 14, paddingVertical: 8, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 },
   freeTipText: { color: "white", fontWeight: "900" },
   storeBody: { flexDirection: "row", padding: 18 },

@@ -20,7 +20,7 @@ const items = [
   ["kakao", "카카오톡", "#fee500"],
   //   ["coupang", "쿠팡", "#447fe9", "coupang.png"],
   //   ["pay", "카카오페이", "#fee500", "kakao-pay.png"],
-  //   ["taxi", "카카오T", "#fee500", "kakao-t.png"],
+  ["taxi", "카카오T", "#fee500", "kakao-t.png"],
   //   ["naver", "네이버지도", "#20bd3b", "naver-map.png"],
 ] as const;
 export function MenuScreen({
@@ -28,11 +28,13 @@ export function MenuScreen({
   onLogout,
   onStart,
   onStartDelivery,
+  onStartTaxi,
 }: {
   session: Session;
   onLogout: () => void;
   onStart: () => void;
   onStartDelivery: () => void;
+  onStartTaxi: () => void;
 }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 600;
@@ -40,7 +42,8 @@ export function MenuScreen({
   const columns = isMobile ? 2 : isCompact ? 3 : 4;
   const gridPadding = isMobile ? 6 : 10;
   const cardMargin = isMobile ? 5 : 9;
-  const cardWidth = (width - gridPadding * 2 - cardMargin * 2 * columns) / columns;
+  const cardWidth =
+    (width - gridPadding * 2 - cardMargin * 2 * columns) / columns;
   const expiry = new Date(session.expires_at).toLocaleDateString("ko-KR");
   return (
     <SafeAreaView style={s.page}>
@@ -53,8 +56,12 @@ export function MenuScreen({
           />
         </View>
         <View style={[s.account, isMobile && s.accountMobile]}>
-          <Text style={[s.name, isMobile && s.accountTextMobile]}>{session.username} 계정</Text>
-          <Text style={[s.expiry, isMobile && s.accountTextMobile]}>~ {expiry}까지</Text>
+          <Text style={[s.name, isMobile && s.accountTextMobile]}>
+            {session.username} 계정
+          </Text>
+          <Text style={[s.expiry, isMobile && s.accountTextMobile]}>
+            ~ {expiry}까지
+          </Text>
           <Pressable onPress={onLogout}>
             <Text style={[s.logout, isMobile && s.logoutMobile]}>로그아웃</Text>
           </Pressable>
@@ -74,22 +81,51 @@ export function MenuScreen({
               isMobile && s.cardMobile,
               { width: cardWidth, margin: cardMargin, backgroundColor: color },
             ]}
-            onPress={id === "kakao" ? onStart : id === "baemin" ? onStartDelivery : undefined}
+            onPress={
+              id === "kakao"
+                ? onStart
+                : id === "baemin"
+                  ? onStartDelivery
+                  : id === "taxi"
+                    ? onStartTaxi
+                    : undefined
+            }
           >
-            <View style={[s.iconBox, isCompact && s.iconBoxCompact, isMobile && s.iconBoxMobile]}>
+            <View
+              style={[
+                s.iconBox,
+                isCompact && s.iconBoxCompact,
+                isMobile && s.iconBoxMobile,
+              ]}
+            >
               {id === "kakao" ? (
                 <Image
                   source={require("../../assets/menu/kakaotalk.png")}
-                  style={[s.menuIcon, isCompact && s.menuIconCompact, isMobile && s.menuIconMobile]}
+                  style={[
+                    s.menuIcon,
+                    isCompact && s.menuIconCompact,
+                    isMobile && s.menuIconMobile,
+                  ]}
                   resizeMode="contain"
                 />
               ) : id === "baemin" ? (
                 <View style={s.deliveryIcon}>
                   <Text style={s.deliveryIconText}>배민</Text>
                 </View>
+              ) : id === "taxi" ? (
+                <View style={s.taxiIcon}>
+                  <Text style={s.taxiIconText}>T</Text>
+                </View>
               ) : null}
             </View>
-            <Text style={[s.title, isCompact && s.titleCompact, isMobile && s.titleMobile, id === "kakao" && s.dark]}>
+            <Text
+              style={[
+                s.title,
+                isCompact && s.titleCompact,
+                isMobile && s.titleMobile,
+                id === "kakao" && s.dark,
+              ]}
+            >
               {title}
             </Text>
           </Pressable>
@@ -127,7 +163,7 @@ const s = StyleSheet.create({
     left: 12,
     right: 12,
     top: undefined,
-    bottom: 12,
+    bottom: 30,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -139,7 +175,12 @@ const s = StyleSheet.create({
     borderRadius: 13,
     fontSize: 18,
   },
-  accountTextMobile: { padding: 7, borderRadius: 9, fontSize: 12, marginTop: 0 },
+  accountTextMobile: {
+    padding: 7,
+    borderRadius: 9,
+    fontSize: 12,
+    marginTop: 0,
+  },
   expiry: {
     marginTop: 8,
     padding: 8,
@@ -187,6 +228,16 @@ const s = StyleSheet.create({
   titleCompact: { fontSize: 19, lineHeight: 25 },
   titleMobile: { fontSize: 16, lineHeight: 21 },
   dark: { color: "#3c1e1e" },
-  deliveryIcon: { width: 78, height: 78, borderRadius: 22, backgroundColor: "white", alignItems: "center", justifyContent: "center", transform: [{ rotate: "-4deg" }] },
+  deliveryIcon: {
+    width: 78,
+    height: 78,
+    borderRadius: 22,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+    transform: [{ rotate: "-4deg" }],
+  },
   deliveryIconText: { color: "#18aaa2", fontSize: 25, fontWeight: "900" },
+  taxiIcon: { width: 78, height: 78, borderRadius: 24, backgroundColor: "#1c1c1c", alignItems: "center", justifyContent: "center" },
+  taxiIconText: { color: "#fee500", fontSize: 45, fontWeight: "900" },
 });

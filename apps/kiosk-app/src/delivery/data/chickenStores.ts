@@ -24,7 +24,7 @@ export const CHICKEN_STORES: ChickenStore[] = [
   },
   {
     id: "happy-chicken",
-    name: "행복통닭 불광점",
+    name: "행복통닭 연희점",
     rating: "4.8",
     reviews: 516,
     deliveryTime: "약 32분",
@@ -35,7 +35,7 @@ export const CHICKEN_STORES: ChickenStore[] = [
   },
   {
     id: "crispy-chicken",
-    name: "바삭한마리 연신내점",
+    name: "바삭한마리 연희점",
     rating: "4.7",
     reviews: 391,
     deliveryTime: "약 27분",
