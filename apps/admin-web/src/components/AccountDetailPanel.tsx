@@ -19,28 +19,44 @@ function escapeXml(value: unknown) {
     .replaceAll("'", "&apos;");
 }
 
-function cell(value: unknown, type: "String" | "Number" = "String", style = "") {
-  return `<Cell${style ? ` ss:StyleID="${style}"` : ""}><Data ss:Type="${type}">${escapeXml(value)}</Data></Cell>`;
+function cell(value: unknown, type: "String" | "Number" = "String", style = "", mergeAcross = 0) {
+  return `<Cell${style ? ` ss:StyleID="${style}"` : ""}${mergeAcross ? ` ss:MergeAcross="${mergeAcross}"` : ""}><Data ss:Type="${type}">${escapeXml(value)}</Data></Cell>`;
+}
+
+function excelDate(value: string) {
+  const date = new Date(value);
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds} (${weekdays[date.getDay()]})`;
 }
 
 function downloadExcel(account: KioskAccount, sessions: PracticeSession[]) {
   const completed = sessions.filter((item) => item.status === "COMPLETED").length;
   const failed = sessions.filter((item) => item.status === "FAILED").length;
-  const summaryRows = [
-    ["계정 아이디", account.username],
-    ["계정 상태", account.is_active ? "사용" : "중지"],
-    ["이용 만료일", new Date(account.expires_at).toLocaleDateString("ko-KR")],
-    ["전체 연습", sessions.length],
-    ["성공", completed],
-    ["실패", failed],
-    ["성공률", sessions.length ? `${Math.round((completed / sessions.length) * 100)}%` : "0%"],
-  ];
-  const summaryXml = summaryRows.map(([label, value]) => `<Row>${cell(label, "String", "Header")}${cell(value, typeof value === "number" ? "Number" : "String")}</Row>`).join("");
-  const recordHeader = ["번호", "서비스", "결과", "소요 시간(초)", "시작 시간", "종료 시간", "종료 사유"]
+  const successRate = sessions.length ? Math.round((completed / sessions.length) * 100) : 0;
+  const recordHeader = ["N", "날짜", "섹션", "소요시간", "결과"]
     .map((value) => cell(value, "String", "Header"))
     .join("");
-  const recordRows = sessions.map((item, index) => `<Row>${cell(index + 1, "Number")}${cell(item.service_name)}${cell(STATUS_LABEL[item.status])}${item.duration_seconds === null ? cell("") : cell(item.duration_seconds, "Number")}${cell(new Date(item.started_at).toLocaleString("ko-KR"))}${cell(item.finished_at ? new Date(item.finished_at).toLocaleString("ko-KR") : "-")}${cell(item.failure_reason || "-")}</Row>`).join("");
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Default"><Alignment ss:Vertical="Center"/><Font ss:FontName="맑은 고딕" ss:Size="11"/></Style><Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="계정 요약"><Table><Column ss:Width="130"/><Column ss:Width="180"/>${summaryXml}</Table></Worksheet><Worksheet ss:Name="연습 기록"><Table><Column ss:Width="50"/><Column ss:Width="120"/><Column ss:Width="80"/><Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="150"/><Column ss:Width="130"/><Row>${recordHeader}</Row>${recordRows}</Table></Worksheet></Workbook>`;
+  const recordRows = sessions.map((item, index) => `<Row ss:Height="24">${cell(index + 1, "Number", "Center")}${cell(excelDate(item.started_at), "String", "Center")}${cell(item.service_name, "String", "Center")}${cell(duration(item.duration_seconds), "String", "Center")}${cell(STATUS_LABEL[item.status], "String", item.status === "COMPLETED" ? "Success" : item.status === "FAILED" ? "Failure" : "Progress")}</Row>`).join("");
+  const styles = `<Styles>
+    <Style ss:ID="Default"><Alignment ss:Vertical="Center"/><Font ss:FontName="맑은 고딕" ss:Size="11"/></Style>
+    <Style ss:ID="Border"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+    <Style ss:ID="Title" ss:Parent="Border"><Font ss:FontName="맑은 고딕" ss:Size="12" ss:Bold="1"/><Interior ss:Color="#E2F0D9" ss:Pattern="Solid"/></Style>
+    <Style ss:ID="Header" ss:Parent="Border"><Font ss:FontName="맑은 고딕" ss:Size="11" ss:Bold="1"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/></Style>
+    <Style ss:ID="Center" ss:Parent="Border"/>
+    <Style ss:ID="Success" ss:Parent="Border"><Font ss:FontName="맑은 고딕" ss:Size="11" ss:Bold="1" ss:Color="#008000"/></Style>
+    <Style ss:ID="Failure" ss:Parent="Border"><Font ss:FontName="맑은 고딕" ss:Size="11" ss:Bold="1" ss:Color="#C00000"/></Style>
+    <Style ss:ID="Progress" ss:Parent="Border"><Font ss:FontName="맑은 고딕" ss:Size="11" ss:Bold="1" ss:Color="#0070C0"/></Style>
+  </Styles>`;
+  const summary = `<Row ss:Height="28">${cell(`${account.username}의 키오스크`, "String", "Title", 1)}${cell("진행", "String", "Title")}${cell("성공/실패", "String", "Title")}${cell("성공률", "String", "Title")}</Row>
+    <Row ss:Height="28">${cell("전체성공률", "String", "Title", 1)}${cell(`${sessions.length}회`, "String", "Title")}${cell(`${completed}회/${failed}회`, "String", "Title")}${cell(`${successRate}%`, "String", "Title")}</Row>
+    <Row ss:Height="12">${cell("")}</Row>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel">${styles}<Worksheet ss:Name="연습 통계"><Table><Column ss:Width="45"/><Column ss:Width="250"/><Column ss:Width="120"/><Column ss:Width="110"/><Column ss:Width="95"/>${summary}<Row ss:Height="25">${recordHeader}</Row>${recordRows}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><Selected/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>4</SplitHorizontal><TopRowBottomPane>4</TopRowBottomPane><PageSetup><Layout x:Orientation="Landscape"/></PageSetup></WorksheetOptions></Worksheet></Workbook>`;
   const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
