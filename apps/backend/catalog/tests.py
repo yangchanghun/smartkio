@@ -112,3 +112,57 @@ class ApiTests(TestCase):
         self.assertEqual(response.data["status"], "IN_PROGRESS")
         session = PracticeSession.objects.get(pk=started.data["id"])
         self.assertGreater(session.last_activity_at, timezone.now() - timedelta(seconds=5))
+
+    def authenticated_admin(self):
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_staff", "is_superuser"])
+        client = APIClient()
+        token = client.post("/api/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]
+        client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        return client
+
+    def test_practice_list_is_paginated_and_filterable_by_account(self):
+        account = self.user.kiosk_account
+        PracticeSession.objects.create(account=account, service="DELIVERY", status="COMPLETED")
+        client = self.authenticated_admin()
+        response = client.get(f"/api/practice-sessions/?account_id={account.id}&page_size=1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertIn("next", response.data)
+
+    def test_statistics_are_aggregated_in_database(self):
+        account = self.user.kiosk_account
+        PracticeSession.objects.create(account=account, service="DELIVERY", status="COMPLETED", duration_seconds=60)
+        PracticeSession.objects.create(account=account, service="DELIVERY", status="FAILED", duration_seconds=30)
+        client = self.authenticated_admin()
+        response = client.get("/api/practice-sessions/statistics/?range=all")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["summary"]["total"], 2)
+        self.assertEqual(response.data["summary"]["completed"], 1)
+        self.assertEqual(response.data["summary"]["failed"], 1)
+        self.assertEqual(response.data["summary"]["rate"], 50)
+        self.assertEqual(len(response.data["recent"]), 2)
+
+    def test_account_statistics_only_include_requested_account(self):
+        account = self.user.kiosk_account
+        PracticeSession.objects.create(account=account, service="TAXI", status="COMPLETED", duration_seconds=90)
+        other_user = User.objects.create_user("other", password="password")
+        other_account = KioskAccount.objects.create(user=other_user, expires_at=timezone.now() + timedelta(days=1))
+        PracticeSession.objects.create(account=other_account, service="TAXI", status="FAILED")
+        client = self.authenticated_admin()
+        response = client.get(f"/api/practice-sessions/account-statistics/?account_id={account.id}")
+        self.assertEqual(response.data["total"], 1)
+        self.assertEqual(response.data["completed"], 1)
+        self.assertEqual(response.data["failed"], 0)
+
+    def test_admin_can_stream_account_excel(self):
+        account = self.user.kiosk_account
+        PracticeSession.objects.create(account=account, service="DELIVERY", status="COMPLETED", duration_seconds=60)
+        client = self.authenticated_admin()
+        response = client.get(f"/api/practice-sessions/export/?account_id={account.id}")
+        body = b"".join(response.streaming_content).decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("application/vnd.ms-excel", response["Content-Type"])
+        self.assertIn("연습 통계", body)
+        self.assertIn("배달의민족", body)

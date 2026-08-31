@@ -7,7 +7,7 @@ import { useDashboardData } from "./hooks/useDashboardData";
 
 function Dashboard() {
   const [tab, setTab] = useState<Tab>("statistics");
-  const { sessions, loading, error, reload } = useDashboardData();
+  const { data, range, setRange, loading, error, reload } = useDashboardData();
   const superuser = localStorage.getItem("smartkio_is_superuser") === "true";
   return (
     <main className="min-h-screen md:grid md:grid-cols-[240px_1fr]">
@@ -21,7 +21,7 @@ function Dashboard() {
           {tab === "statistics" ? <button className="rounded-xl bg-forest px-4 py-2 font-bold text-white hover:bg-emerald-900" onClick={() => void reload()}>새로고침</button> : null}
         </header>
         {error ? <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-        {tab === "statistics" ? <StatisticsDashboard sessions={sessions} loading={loading} /> : <AccountsPanel />}
+        {tab === "statistics" ? <StatisticsDashboard data={data} range={range} onRange={setRange} loading={loading} /> : <AccountsPanel />}
       </section>
     </main>
   );

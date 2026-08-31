@@ -7,6 +7,9 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from .models import Category, KioskAccount, PracticeSession, Product, Order
+from .pagination import PracticeSessionPagination
+from .practice_exports import practice_export_response
+from .practice_statistics import account_statistics as build_account_statistics, dashboard_statistics
 from .serializers import CategorySerializer, KioskAccountSerializer, PracticeSessionSerializer, ProductSerializer, OrderSerializer
 
 class HasKioskKey(permissions.BasePermission):
@@ -73,21 +76,65 @@ class KioskAccountViewSet(viewsets.ModelViewSet):
 class PracticeSessionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PracticeSession.objects.select_related("account__user")
     serializer_class = PracticeSessionSerializer
+    pagination_class = PracticeSessionPagination
 
-    def get_queryset(self):
-        cutoff = timezone.now() - timedelta(seconds=45)
+    def expire_stale_sessions(self):
+        now = timezone.now()
+        cutoff = now - timedelta(seconds=45)
         with transaction.atomic():
-            stale_sessions = PracticeSession.objects.select_for_update().filter(
-                status="IN_PROGRESS",
-                last_activity_at__lt=cutoff,
+            stale_sessions = list(
+                PracticeSession.objects.select_for_update().filter(
+                    status="IN_PROGRESS",
+                    last_activity_at__lt=cutoff,
+                )
             )
             for session in stale_sessions:
-                session.finish("FAILED", "APP_TERMINATED")
+                session.status = "FAILED"
+                session.finished_at = now
+                session.duration_seconds = max(0, int((now - session.started_at).total_seconds()))
+                session.failure_reason = "APP_TERMINATED"
+            if stale_sessions:
+                PracticeSession.objects.bulk_update(
+                    stale_sessions,
+                    ["status", "finished_at", "duration_seconds", "failure_reason"],
+                )
+
+    def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.user.is_staff:
+            account_id = self.request.query_params.get("account_id")
+            if account_id:
+                queryset = queryset.filter(account_id=account_id)
             return queryset
         account = getattr(self.request.user, "kiosk_account", None)
         return queryset.filter(account=account) if account else queryset.none()
+
+    def list(self, request, *args, **kwargs):
+        self.expire_stale_sessions()
+        return super().list(request, *args, **kwargs)
+
+    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
+    def statistics(self, request):
+        self.expire_stale_sessions()
+        range_value = request.query_params.get("range", "30")
+        if range_value not in {"7", "30", "all"}:
+            return Response({"detail": "조회 기간을 확인해 주세요."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(dashboard_statistics(range_value))
+
+    @action(detail=False, methods=["get"], url_path="account-statistics", permission_classes=[permissions.IsAdminUser])
+    def account_statistics(self, request):
+        account = KioskAccount.objects.filter(pk=request.query_params.get("account_id")).first()
+        if not account:
+            return Response({"detail": "계정을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        self.expire_stale_sessions()
+        return Response(build_account_statistics(account))
+
+    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
+    def export(self, request):
+        account = KioskAccount.objects.select_related("user").filter(pk=request.query_params.get("account_id")).first()
+        if not account:
+            return Response({"detail": "계정을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        return practice_export_response(account)
 
     @transaction.atomic
     @action(detail=False, methods=["post"])

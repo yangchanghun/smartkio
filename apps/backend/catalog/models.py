@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 
 class Category(models.Model):
@@ -60,6 +61,20 @@ class PracticeSession(models.Model):
         indexes = [
             models.Index(fields=["account", "service", "started_at"]),
             models.Index(fields=["status", "started_at"]),
+            models.Index(fields=["-started_at"], name="practice_started_idx"),
+            models.Index(fields=["account", "-started_at"], name="practice_acct_started_idx"),
+            models.Index(
+                fields=["last_activity_at"],
+                condition=Q(status="IN_PROGRESS"),
+                name="practice_active_beat_idx",
+            ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account"],
+                condition=Q(status="IN_PROGRESS"),
+                name="one_active_practice_per_account",
+            ),
         ]
 
     def finish(self, status, failure_reason=""):

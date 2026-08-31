@@ -11,4 +11,21 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   }
   return response.json();
 }
+export async function download(path: string): Promise<void> {
+  const token = getToken();
+  const response = await fetch(`${API}${path}`, {
+    headers: token ? { Authorization: `Token ${token}` } : {},
+  });
+  if (!response.ok) throw new Error("파일을 다운로드하지 못했습니다.");
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/)?.[1];
+  const filename = encodedName ? decodeURIComponent(encodedName) : "연습통계.xls";
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 export { API };

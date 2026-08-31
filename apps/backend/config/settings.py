@@ -10,7 +10,7 @@ MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware", "django.middleware.securi
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates", "DIRS": [], "APP_DIRS": True, "OPTIONS": {"context_processors": ["django.template.context_processors.request", "django.contrib.auth.context_processors.auth", "django.contrib.messages.context_processors.messages"]}}]
 WSGI_APPLICATION = "config.wsgi.application"
-DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "NAME": os.getenv("POSTGRES_DB", "smartkio"), "USER": os.getenv("POSTGRES_USER", "smartkio"), "PASSWORD": os.getenv("POSTGRES_PASSWORD", "smartkio_local_only"), "HOST": os.getenv("POSTGRES_HOST", "localhost"), "PORT": os.getenv("POSTGRES_PORT", "5432")}}
+DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "NAME": os.getenv("POSTGRES_DB", "smartkio"), "USER": os.getenv("POSTGRES_USER", "smartkio"), "PASSWORD": os.getenv("POSTGRES_PASSWORD", "smartkio_local_only"), "HOST": os.getenv("POSTGRES_HOST", "localhost"), "PORT": os.getenv("POSTGRES_PORT", "5432"), "CONN_MAX_AGE": int(os.getenv("POSTGRES_CONN_MAX_AGE", "60")), "CONN_HEALTH_CHECKS": True}}
 if os.getenv("DJANGO_USE_SQLITE") == "1":
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 AUTH_PASSWORD_VALIDATORS = []

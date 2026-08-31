@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { request } from "../api";
-import { PracticeSession } from "../types";
+import type { DashboardStatistics } from "../types";
+
+export type StatisticsRange = "7" | "30" | "all";
 
 export function useDashboardData() {
-  const [sessions, setSessions] = useState<PracticeSession[]>([]);
+  const [data, setData] = useState<DashboardStatistics | null>(null);
+  const [range, setRange] = useState<StatisticsRange>("30");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const reload = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      setSessions(await request<PracticeSession[]>("/api/practice-sessions/"));
+      setData(await request<DashboardStatistics>(`/api/practice-sessions/statistics/?range=${range}`));
       setError("");
     } catch (error) {
       setError(
@@ -20,11 +23,11 @@ export function useDashboardData() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [range]);
   useEffect(() => {
     void reload();
     const timer = window.setInterval(() => void reload(true), 15_000);
     return () => window.clearInterval(timer);
   }, [reload]);
-  return { sessions, loading, error, reload };
+  return { data, range, setRange, loading, error, reload };
 }
