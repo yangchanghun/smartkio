@@ -1,11 +1,12 @@
 from django.contrib.auth import authenticate
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from .models import Category, KioskAccount, Product, Order
-from .serializers import CategorySerializer, KioskAccountSerializer, ProductSerializer, OrderSerializer
+from .models import Category, KioskAccount, PracticeSession, Product, Order
+from .serializers import CategorySerializer, KioskAccountSerializer, PracticeSessionSerializer, ProductSerializer, OrderSerializer
 
 class HasKioskKey(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -31,6 +32,8 @@ def kiosk_login(request):
     account = getattr(user, "kiosk_account", None) if user else None
     if not account or not account.is_active or timezone.now() >= account.expires_at:
         return Response({"detail": "계정 정보 또는 이용 기간을 확인해주세요."}, status=status.HTTP_401_UNAUTHORIZED)
+    for session in PracticeSession.objects.filter(account=account, status="IN_PROGRESS"):
+        session.finish("FAILED", "LOGIN_REPLACED")
     Token.objects.filter(user=user).delete()
     token = Token.objects.create(user=user)
     account.last_login_at = timezone.now()
@@ -64,3 +67,45 @@ class KioskAccountViewSet(viewsets.ModelViewSet):
     queryset = KioskAccount.objects.select_related("user").all().order_by("user__username")
     serializer_class = KioskAccountSerializer
     permission_classes = [permissions.IsAdminUser]
+
+
+class PracticeSessionViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = PracticeSession.objects.select_related("account__user")
+    serializer_class = PracticeSessionSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.is_staff:
+            return queryset
+        account = getattr(self.request.user, "kiosk_account", None)
+        return queryset.filter(account=account) if account else queryset.none()
+
+    @transaction.atomic
+    @action(detail=False, methods=["post"])
+    def start(self, request):
+        account = getattr(request.user, "kiosk_account", None)
+        if not account:
+            return Response({"detail": "키오스크 계정이 필요합니다."}, status=status.HTTP_403_FORBIDDEN)
+        service = request.data.get("service", "")
+        valid_services = {value for value, _ in PracticeSession.SERVICE_CHOICES}
+        if service not in valid_services:
+            return Response({"detail": "연습 서비스 값을 확인해 주세요."}, status=status.HTTP_400_BAD_REQUEST)
+        previous = PracticeSession.objects.select_for_update().filter(account=account, status="IN_PROGRESS")
+        for session in previous:
+            session.finish("FAILED", "INTERRUPTED")
+        session = PracticeSession.objects.create(account=account, service=service)
+        return Response(self.get_serializer(session).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        session = self.get_object()
+        if session.status == "IN_PROGRESS":
+            session.finish("COMPLETED")
+        return Response(self.get_serializer(session).data)
+
+    @action(detail=True, methods=["post"])
+    def abandon(self, request, pk=None):
+        session = self.get_object()
+        if session.status == "IN_PROGRESS":
+            session.finish("FAILED", request.data.get("reason", "USER_EXIT")[:32])
+        return Response(self.get_serializer(session).data)

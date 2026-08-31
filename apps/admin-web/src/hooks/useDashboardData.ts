@@ -1,22 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { request } from "../api";
-import { Category, Order, Product } from "../types";
+import { PracticeSession } from "../types";
 
 export function useDashboardData() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [sessions, setSessions] = useState<PracticeSession[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const reload = useCallback(async () => {
     try {
-      const [nextCategories, nextProducts, nextOrders] = await Promise.all([
-        request<Category[]>("/api/categories/"),
-        request<Product[]>("/api/products/"),
-        request<Order[]>("/api/orders/"),
-      ]);
-      setCategories(nextCategories);
-      setProducts(nextProducts);
-      setOrders(nextOrders);
+      setLoading(true);
+      setSessions(await request<PracticeSession[]>("/api/practice-sessions/"));
       setError("");
     } catch (error) {
       setError(
@@ -24,10 +17,12 @@ export function useDashboardData() {
           ? error.message
           : "데이터를 불러오지 못했습니다.",
       );
+    } finally {
+      setLoading(false);
     }
   }, []);
   useEffect(() => {
     void reload();
   }, [reload]);
-  return { categories, products, orders, error, reload };
+  return { sessions, loading, error, reload };
 }

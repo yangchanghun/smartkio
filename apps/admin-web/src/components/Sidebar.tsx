@@ -1,4 +1,4 @@
-export type Tab = "products" | "orders" | "accounts";
+export type Tab = "statistics" | "accounts";
 export function Sidebar({
   tab,
   onTab,
@@ -20,8 +20,11 @@ export function Sidebar({
   );
   return (
     <aside className="flex min-h-0 flex-col gap-2 bg-forest p-5 text-white md:min-h-screen">
-      <h1 className="mb-6 text-2xl font-black">SmartKio</h1>
-
+      <div className="mb-6">
+        <h1 className="text-2xl font-black">SmartKio</h1>
+        <p className="mt-1 text-xs text-emerald-200">디지털 연습 통계</p>
+      </div>
+      {item("statistics", "연습 통계")}
       {isSuperuser && item("accounts", "회원 계정")}
       <button
         className="mt-auto rounded-xl px-3 py-2 text-left text-emerald-100 hover:bg-emerald-800"

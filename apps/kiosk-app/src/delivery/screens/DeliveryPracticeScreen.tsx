@@ -14,8 +14,10 @@ import { DeliveryPaymentScreen } from "./DeliveryPaymentScreen";
 import { DeliveryCompleteScreen } from "./DeliveryCompleteScreen";
 import type { ChickenStore } from "../data/chickenStores";
 import { CHICKEN_STORES } from "../data/chickenStores";
+import { usePracticeSession } from "../../practice/hooks/usePracticeSession";
 
 export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; token: string }) {
+  const { completePractice, restartPracticeSession } = usePracticeSession(token, "DELIVERY");
   const [page, setPage] = useState<"home" | "address" | "stores" | "store-detail" | "menu-option" | "order" | "payment" | "complete">("home");
   const [selectedStore, setSelectedStore] = useState<ChickenStore>(CHICKEN_STORES[0]);
   const [selectedMenu, setSelectedMenu] = useState<ChickenMenuItem>(CHICKEN_MENU_ITEMS[0]);
@@ -165,14 +167,17 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
   };
   const pay = () => {
     if (mission !== "payment") { wrongAction(); return; }
+    void completePractice().catch(() => undefined);
     setMission("done"); setPage("complete"); speak("주문 연습을 모두 완료했습니다. 정말 잘하셨어요. 처음부터 다시 연습하기 버튼을 누르면 주소 선택부터 다시 연습할 수 있습니다.");
   };
   const restartPractice = () => {
+    void restartPracticeSession().catch(() => undefined);
     setAddress(SAMPLE_ADDRESSES[0]); setSelectedStore(CHICKEN_STORES[0]); setSelectedMenu(CHICKEN_MENU_ITEMS[0]); setCartItems([]); setChallengeRound(false);
     setMission("address"); setPage("home"); setMissionVisible(true);
     speak("배달의민족 연습을 처음부터 다시 시작합니다. 홈 화면 맨 위의 배달 주소를 눌러 주세요.");
   };
   const orderAgain = () => {
+    void restartPracticeSession().catch(() => undefined);
     const halfMenu = CHICKEN_MENU_ITEMS.find((item) => item.id === "half") ?? CHICKEN_MENU_ITEMS[0];
     setCartItems([]); setSelectedMenu(halfMenu); setChallengeRound(true);
     setMission("menu"); setPage("store-detail"); setMissionVisible(true);

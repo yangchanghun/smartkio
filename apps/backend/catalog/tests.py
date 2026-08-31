@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework.test import APIClient
-from .models import Category, KioskAccount, Product
+from .models import Category, KioskAccount, PracticeSession, Product
 
 class ApiTests(TestCase):
     def setUp(self):
@@ -30,3 +30,42 @@ class ApiTests(TestCase):
     def test_admin_login(self):
         client = APIClient()
         self.assertEqual(client.post("/api/auth/login/", {"username": "admin", "password": "password"}, format="json").status_code, 200)
+
+    def authenticated_kiosk(self):
+        client = APIClient()
+        token = client.post("/api/kiosk/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]
+        client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        return client
+
+    def test_practice_session_records_completion_and_duration(self):
+        client = self.authenticated_kiosk()
+        started = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")
+        self.assertEqual(started.status_code, 201)
+        completed = client.post(f"/api/practice-sessions/{started.data['id']}/complete/", {}, format="json")
+        self.assertEqual(completed.status_code, 200)
+        self.assertEqual(completed.data["status"], "COMPLETED")
+        self.assertIsNotNone(completed.data["duration_seconds"])
+
+    def test_starting_new_practice_fails_unfinished_session(self):
+        client = self.authenticated_kiosk()
+        first = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")
+        client.post("/api/practice-sessions/start/", {"service": "TAXI"}, format="json")
+        previous = PracticeSession.objects.get(pk=first.data["id"])
+        self.assertEqual(previous.status, "FAILED")
+        self.assertEqual(previous.failure_reason, "INTERRUPTED")
+        self.assertIsNotNone(previous.duration_seconds)
+
+    def test_abandon_marks_practice_as_failed(self):
+        client = self.authenticated_kiosk()
+        started = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")
+        abandoned = client.post(f"/api/practice-sessions/{started.data['id']}/abandon/", {"reason": "USER_EXIT"}, format="json")
+        self.assertEqual(abandoned.data["status"], "FAILED")
+        self.assertEqual(abandoned.data["failure_reason"], "USER_EXIT")
+
+    def test_next_login_fails_session_left_by_closed_app(self):
+        client = self.authenticated_kiosk()
+        started = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")
+        client.post("/api/kiosk/auth/login/", {"username": "admin", "password": "password"}, format="json")
+        previous = PracticeSession.objects.get(pk=started.data["id"])
+        self.assertEqual(previous.status, "FAILED")
+        self.assertEqual(previous.failure_reason, "LOGIN_REPLACED")
