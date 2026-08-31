@@ -45,6 +45,10 @@ export function completePracticeSession(token: string, sessionId: number) {
   return practiceRequest(`/api/practice-sessions/${sessionId}/complete/`, token);
 }
 
+export function heartbeatPracticeSession(token: string, sessionId: number) {
+  return practiceRequest(`/api/practice-sessions/${sessionId}/heartbeat/`, token);
+}
+
 export function abandonPracticeSession(
   token: string,
   sessionId: number,

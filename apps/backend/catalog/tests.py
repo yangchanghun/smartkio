@@ -69,3 +69,25 @@ class ApiTests(TestCase):
         previous = PracticeSession.objects.get(pk=started.data["id"])
         self.assertEqual(previous.status, "FAILED")
         self.assertEqual(previous.failure_reason, "LOGIN_REPLACED")
+
+    def test_stale_heartbeat_marks_force_closed_practice_as_failed(self):
+        client = self.authenticated_kiosk()
+        started = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")
+        PracticeSession.objects.filter(pk=started.data["id"]).update(
+            last_activity_at=timezone.now() - timedelta(seconds=46),
+        )
+        client.get("/api/practice-sessions/")
+        session = PracticeSession.objects.get(pk=started.data["id"])
+        self.assertEqual(session.status, "FAILED")
+        self.assertEqual(session.failure_reason, "APP_TERMINATED")
+
+    def test_heartbeat_keeps_active_practice_in_progress(self):
+        client = self.authenticated_kiosk()
+        started = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")
+        PracticeSession.objects.filter(pk=started.data["id"]).update(
+            last_activity_at=timezone.now() - timedelta(seconds=40),
+        )
+        response = client.post(f"/api/practice-sessions/{started.data['id']}/heartbeat/", {}, format="json")
+        self.assertEqual(response.data["status"], "IN_PROGRESS")
+        session = PracticeSession.objects.get(pk=started.data["id"])
+        self.assertGreater(session.last_activity_at, timezone.now() - timedelta(seconds=5))

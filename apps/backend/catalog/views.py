@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate
 from django.db import transaction
 from django.utils import timezone
+from datetime import timedelta
 from rest_framework import permissions, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action, api_view, permission_classes
@@ -74,6 +75,14 @@ class PracticeSessionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PracticeSessionSerializer
 
     def get_queryset(self):
+        cutoff = timezone.now() - timedelta(seconds=45)
+        with transaction.atomic():
+            stale_sessions = PracticeSession.objects.select_for_update().filter(
+                status="IN_PROGRESS",
+                last_activity_at__lt=cutoff,
+            )
+            for session in stale_sessions:
+                session.finish("FAILED", "APP_TERMINATED")
         queryset = super().get_queryset()
         if self.request.user.is_staff:
             return queryset
@@ -101,6 +110,14 @@ class PracticeSessionViewSet(viewsets.ReadOnlyModelViewSet):
         session = self.get_object()
         if session.status == "IN_PROGRESS":
             session.finish("COMPLETED")
+        return Response(self.get_serializer(session).data)
+
+    @action(detail=True, methods=["post"])
+    def heartbeat(self, request, pk=None):
+        session = self.get_object()
+        if session.status == "IN_PROGRESS":
+            session.last_activity_at = timezone.now()
+            session.save(update_fields=["last_activity_at"])
         return Response(self.get_serializer(session).data)
 
     @action(detail=True, methods=["post"])

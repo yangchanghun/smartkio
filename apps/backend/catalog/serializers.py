@@ -31,5 +31,5 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PracticeSession
-        fields = ["id", "username", "service", "service_name", "status", "started_at", "finished_at", "duration_seconds", "failure_reason"]
+        fields = ["id", "username", "service", "service_name", "status", "started_at", "last_activity_at", "finished_at", "duration_seconds", "failure_reason"]
         read_only_fields = fields

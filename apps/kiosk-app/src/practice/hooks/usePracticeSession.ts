@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   abandonPracticeSession,
   completePracticeSession,
+  heartbeatPracticeSession,
   type PracticeService,
   startPracticeSession,
 } from "../services/practiceApi";
@@ -36,6 +37,18 @@ export function usePracticeSession(token: string, service: PracticeService) {
         .catch(() => undefined);
     };
   }, [begin, token]);
+
+  useEffect(() => {
+    const heartbeat = () => {
+      if (terminal.current) return;
+      void sessionPromise.current
+        ?.then((sessionId) => heartbeatPracticeSession(token, sessionId))
+        .catch(() => undefined);
+    };
+    heartbeat();
+    const timer = setInterval(heartbeat, 10_000);
+    return () => clearInterval(timer);
+  }, [service, token]);
 
   const completePractice = useCallback(async () => {
     const sessionId = await sessionPromise.current;
