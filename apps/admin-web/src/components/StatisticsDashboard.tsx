@@ -13,12 +13,10 @@ function formatDuration(seconds: number | null) {
 
 export function StatisticsDashboard({ sessions, loading }: { sessions: PracticeSession[]; loading: boolean }) {
   const [range, setRange] = useState<Range>("30");
-  const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
     const threshold = range === "all" ? 0 : Date.now() - Number(range) * 86_400_000;
-    const term = query.trim().toLowerCase();
-    return sessions.filter((session) => (!threshold || new Date(session.started_at).getTime() >= threshold) && session.username.toLowerCase().includes(term));
-  }, [query, range, sessions]);
+    return sessions.filter((session) => !threshold || new Date(session.started_at).getTime() >= threshold);
+  }, [range, sessions]);
 
   const summary = useMemo(() => {
     const completed = filtered.filter((item) => item.status === "COMPLETED");
@@ -55,7 +53,6 @@ export function StatisticsDashboard({ sessions, loading }: { sessions: PracticeS
   return <div className="space-y-6">
     <div className="flex flex-wrap gap-3 rounded-2xl bg-white p-4 shadow-sm">
       <div className="flex rounded-xl bg-slate-100 p-1">{(["7", "30", "all"] as Range[]).map((value) => <button key={value} onClick={() => setRange(value)} className={`rounded-lg px-4 py-2 text-sm font-bold ${range === value ? "bg-forest text-white" : "text-slate-600"}`}>{value === "all" ? "전체" : `최근 ${value}일`}</button>)}</div>
-      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="계정 아이디 검색" className="min-w-[220px] flex-1 rounded-xl border border-slate-200 px-4 py-2" />
     </div>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6"><Metric label="전체 연습" value={`${summary.total}회`} /><Metric label="성공" value={`${summary.completed}회`} tone="green" /><Metric label="실패" value={`${summary.failed}회`} tone="red" /><Metric label="진행 중" value={`${summary.progress}회`} tone="blue" /><Metric label="성공률" value={`${summary.rate}%`} tone="green" /><Metric label="평균 성공 시간" value={formatDuration(summary.average)} /></div>
     <div className="grid gap-6 xl:grid-cols-[1fr_1.35fr]">

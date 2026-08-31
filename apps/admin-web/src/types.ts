@@ -10,3 +10,11 @@ export type PracticeSession = {
   duration_seconds: number | null;
   failure_reason: string;
 };
+
+export type KioskAccount = {
+  id: number;
+  username: string;
+  expires_at: string;
+  is_active: boolean;
+  last_login_at: string | null;
+};

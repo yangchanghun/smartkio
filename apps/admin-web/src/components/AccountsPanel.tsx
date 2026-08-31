@@ -1,21 +1,17 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { request } from "../api";
-type Account = {
-  id: number;
-  username: string;
-  expires_at: string;
-  is_active: boolean;
-  last_login_at: string | null;
-};
+import type { KioskAccount } from "../types";
+import { AccountDetailPanel } from "./AccountDetailPanel";
 export function AccountsPanel() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<KioskAccount[]>([]);
+  const [selected, setSelected] = useState<KioskAccount | null>(null);
   const [q, setQ] = useState("");
   const [creating, setCreating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const load = useCallback(async () => {
-    setAccounts(await request<Account[]>("/api/kiosk-accounts/"));
+    setAccounts(await request<KioskAccount[]>("/api/kiosk-accounts/"));
   }, []);
   useEffect(() => {
     void load();
@@ -24,7 +20,7 @@ export function AccountsPanel() {
     () => accounts.filter((a) => a.username.includes(q)),
     [accounts, q],
   );
-  async function save(e: FormEvent<HTMLFormElement>, a: Account) {
+  async function save(e: FormEvent<HTMLFormElement>, a: KioskAccount) {
     e.preventDefault();
     const d = new FormData(e.currentTarget);
     await request(`/api/kiosk-accounts/${a.id}/`, {
@@ -48,7 +44,7 @@ export function AccountsPanel() {
     setSubmitting(true);
     setError("");
     try {
-      const account = await request<Account>("/api/kiosk-accounts/", {
+      const account = await request<KioskAccount>("/api/kiosk-accounts/", {
         method: "POST",
         body: JSON.stringify({
           username: String(data.get("username") ?? "").trim(),
@@ -66,6 +62,9 @@ export function AccountsPanel() {
     } finally {
       setSubmitting(false);
     }
+  }
+  if (selected) {
+    return <AccountDetailPanel account={selected} onBack={() => setSelected(null)} />;
   }
   if (creating) {
     return (
@@ -133,7 +132,7 @@ export function AccountsPanel() {
           <tbody>
             {rows.map((a) => (
               <tr className="border-t border-slate-100" key={a.id}>
-                <td className="p-4 font-bold">{a.username}</td>
+                <td className="p-4 font-bold"><button className="text-emerald-800 underline-offset-4 hover:underline" onClick={() => setSelected(a)} type="button">{a.username}</button></td>
                 <td>{new Date(a.expires_at).toLocaleDateString("ko-KR")}</td>
                 <td
                   className={a.is_active ? "text-emerald-700" : "text-red-600"}
@@ -146,10 +145,9 @@ export function AccountsPanel() {
                     : "-"}
                 </td>
                 <td className="p-3">
-                  <form
-                    className="flex gap-2"
-                    onSubmit={(e) => void save(e, a)}
-                  >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button className="rounded border border-emerald-700 px-3 py-1 font-bold text-emerald-800" onClick={() => setSelected(a)} type="button">통계 보기</button>
+                    <form className="flex gap-2" onSubmit={(e) => void save(e, a)}>
                     <input
                       className="rounded border p-1"
                       name="expires_at"
@@ -167,7 +165,8 @@ export function AccountsPanel() {
                     <button className="rounded bg-forest px-3 py-1 text-white">
                       저장
                     </button>
-                  </form>
+                    </form>
+                  </div>
                 </td>
               </tr>
             ))}
