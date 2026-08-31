@@ -31,6 +31,27 @@ class ApiTests(TestCase):
         client = APIClient()
         self.assertEqual(client.post("/api/auth/login/", {"username": "admin", "password": "password"}, format="json").status_code, 200)
 
+    def test_admin_can_create_kiosk_account(self):
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_staff", "is_superuser"])
+        client = APIClient()
+        token = client.post("/api/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]
+        client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        response = client.post(
+            "/api/kiosk-accounts/",
+            {
+                "username": "practice01",
+                "password": "practice-password",
+                "expires_at": (timezone.now() + timedelta(days=30)).isoformat(),
+                "is_active": True,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(User.objects.get(username="practice01").check_password("practice-password"))
+        self.assertTrue(KioskAccount.objects.filter(user__username="practice01").exists())
+
     def authenticated_kiosk(self):
         client = APIClient()
         token = client.post("/api/kiosk/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]
