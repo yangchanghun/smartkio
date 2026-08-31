@@ -118,6 +118,9 @@ export function AccountsPanel() {
           + 새 계정 만들기
         </button>
       </div>
+      <p className="mb-4 rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-900">
+        계정의 <span className="text-emerald-700">통계 · 엑셀</span> 버튼을 누르면 연습 기록 확인과 엑셀 다운로드를 할 수 있습니다.
+      </p>
       <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
         <table className="w-full min-w-[700px] text-left text-sm">
           <thead className="bg-slate-50 text-slate-500">
@@ -132,7 +135,14 @@ export function AccountsPanel() {
           <tbody>
             {rows.map((a) => (
               <tr className="border-t border-slate-100" key={a.id}>
-                <td className="p-4 font-bold"><button className="text-emerald-800 underline-offset-4 hover:underline" onClick={() => setSelected(a)} type="button">{a.username}</button></td>
+                <td className="p-4 font-bold">
+                  <div className="flex min-w-32 flex-col items-start gap-2">
+                    <span>{a.username}</span>
+                    <button className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-black text-white hover:bg-emerald-800" onClick={() => setSelected(a)} type="button">
+                      통계 · 엑셀 →
+                    </button>
+                  </div>
+                </td>
                 <td>{new Date(a.expires_at).toLocaleDateString("ko-KR")}</td>
                 <td
                   className={a.is_active ? "text-emerald-700" : "text-red-600"}
@@ -146,7 +156,6 @@ export function AccountsPanel() {
                 </td>
                 <td className="p-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <button className="rounded border border-emerald-700 px-3 py-1 font-bold text-emerald-800" onClick={() => setSelected(a)} type="button">통계 보기</button>
                     <form className="flex gap-2" onSubmit={(e) => void save(e, a)}>
                     <input
                       className="rounded border p-1"

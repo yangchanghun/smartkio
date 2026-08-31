@@ -78,7 +78,9 @@ export function AccountDetailPanel({ account, onBack }: { account: KioskAccount;
         <h3 className="text-2xl font-black">{account.username} 계정 통계</h3>
         <p className="mt-1 text-sm text-slate-500">만료일 {new Date(account.expires_at).toLocaleDateString("ko-KR")} · {account.is_active ? "사용 중" : "사용 중지"}</p>
       </div>
-      <button className="rounded-xl bg-emerald-700 px-5 py-3 font-black text-white hover:bg-emerald-800 disabled:opacity-50" disabled={loading} onClick={() => downloadExcel(account, sessions)} type="button">엑셀 다운로드</button>
+      <button className="w-full rounded-xl bg-emerald-700 px-6 py-4 text-lg font-black text-white shadow-sm hover:bg-emerald-800 disabled:opacity-50 sm:w-auto" disabled={loading} onClick={() => downloadExcel(account, sessions)} type="button">
+        ↓ 엑셀 다운로드
+      </button>
     </div>
     {error ? <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{error}</p> : null}
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
