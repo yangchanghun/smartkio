@@ -87,11 +87,11 @@ export function AccountsPanel() {
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-sm font-bold">비밀번호</span>
-              <input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={8} name="password" placeholder="8자 이상" required type="password" />
+              <input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={4} name="password" placeholder="4자 이상" required type="password" />
             </label>
             <label className="block">
               <span className="mb-2 block text-sm font-bold">비밀번호 확인</span>
-              <input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={8} name="password_confirm" placeholder="한 번 더 입력" required type="password" />
+              <input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={4} name="password_confirm" placeholder="한 번 더 입력" required type="password" />
             </label>
           </div>
           <label className="block">

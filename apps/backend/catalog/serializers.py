@@ -14,7 +14,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class KioskAccountSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", max_length=150)
-    password = serializers.CharField(write_only=True, required=False, min_length=8)
+    password = serializers.CharField(write_only=True, required=False, min_length=4)
     class Meta:
         model = KioskAccount
         fields = ["id", "user", "username", "password", "expires_at", "is_active", "last_login_at"]

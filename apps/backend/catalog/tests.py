@@ -42,14 +42,14 @@ class ApiTests(TestCase):
             "/api/kiosk-accounts/",
             {
                 "username": "practice01",
-                "password": "practice-password",
+                "password": "1234",
                 "expires_at": (timezone.now() + timedelta(days=30)).isoformat(),
                 "is_active": True,
             },
             format="json",
         )
         self.assertEqual(response.status_code, 201)
-        self.assertTrue(User.objects.get(username="practice01").check_password("practice-password"))
+        self.assertTrue(User.objects.get(username="practice01").check_password("1234"))
         self.assertTrue(KioskAccount.objects.filter(user__username="practice01").exists())
 
     def authenticated_kiosk(self):
