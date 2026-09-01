@@ -67,6 +67,24 @@ class ApiTests(TestCase):
         self.assertEqual(completed.data["status"], "COMPLETED")
         self.assertIsNotNone(completed.data["duration_seconds"])
 
+    def test_gov24_practice_services_are_recorded(self):
+        client = self.authenticated_kiosk()
+        services = ["GOV24_LOGIN", "GOV24_TRANSCRIPT", "GOV24_MOBILE_ID"]
+        for service in services:
+            started = client.post(
+                "/api/practice-sessions/start/",
+                {"service": service},
+                format="json",
+            )
+            self.assertEqual(started.status_code, 201)
+            self.assertEqual(started.data["service"], service)
+            completed = client.post(
+                f"/api/practice-sessions/{started.data['id']}/complete/",
+                {},
+                format="json",
+            )
+            self.assertEqual(completed.data["status"], "COMPLETED")
+
     def test_starting_new_practice_fails_unfinished_session(self):
         client = self.authenticated_kiosk()
         first = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")

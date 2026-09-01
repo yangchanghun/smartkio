@@ -41,6 +41,9 @@ class PracticeSession(models.Model):
         ("TAXI", "카카오T"),
         ("COUPANG_SIGNUP", "쿠팡 회원가입"),
         ("COUPANG_SHOPPING", "쿠팡 상품구매"),
+        ("GOV24_LOGIN", "정부24 로그인"),
+        ("GOV24_TRANSCRIPT", "주민등록표 초본 발급"),
+        ("GOV24_MOBILE_ID", "모바일 주민등록증"),
     ]
     STATUS_CHOICES = [
         ("IN_PROGRESS", "진행 중"),
