@@ -44,6 +44,7 @@ class PracticeSession(models.Model):
         ("GOV24_LOGIN", "정부24 로그인"),
         ("GOV24_TRANSCRIPT", "주민등록표 초본 발급"),
         ("GOV24_MOBILE_ID", "모바일 주민등록증"),
+        ("KTX_BOOKING", "KTX 예매"),
     ]
     STATUS_CHOICES = [
         ("IN_PROGRESS", "진행 중"),
