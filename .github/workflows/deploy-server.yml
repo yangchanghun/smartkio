@@ -13,9 +13,16 @@ jobs:
         env: {SSH_PRIVATE_KEY: '${{ secrets.SSH_PRIVATE_KEY }}', SSH_KNOWN_HOSTS: '${{ secrets.SSH_KNOWN_HOSTS }}'}
         run: |
           install -m 700 -d ~/.ssh
-          # Accept normal PEM newlines, literal \n sequences, and Windows CRLF.
-          printf '%b' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          # Accept PEM text, literal \n sequences, CRLF, or a base64-encoded key.
+          printf '%b' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key.input
+          if grep -q '^-----BEGIN .*PRIVATE KEY-----' ~/.ssh/deploy_key.input; then
+            mv ~/.ssh/deploy_key.input ~/.ssh/deploy_key
+          else
+            tr -d '[:space:]' < ~/.ssh/deploy_key.input | base64 --decode > ~/.ssh/deploy_key
+            rm ~/.ssh/deploy_key.input
+          fi
           chmod 600 ~/.ssh/deploy_key
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
       - name: Upload and restart
         env:
