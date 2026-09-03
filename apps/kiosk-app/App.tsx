@@ -22,6 +22,7 @@ import { KtxPracticeScreen } from "./src/ktx/screens/KtxPracticeScreen";
 import { KakaoPayPracticeScreen } from "./src/kakaopay/screens/KakaoPayPracticeScreen";
 import { KakaoPayHubScreen } from "./src/kakaopay/screens/KakaoPayHubScreen";
 import { KakaoPayAccountScreen } from "./src/kakaopay/screens/KakaoPayAccountScreen";
+import { KakaoPayTransferScreen } from "./src/kakaopay/screens/KakaoPayTransferScreen";
 
 type Screen =
   | "menu"
@@ -42,7 +43,8 @@ type Screen =
   | "ktx"
   | "kakaopay"
   | "kakaopay-login"
-  | "kakaopay-account";
+  | "kakaopay-account"
+  | "kakaopay-transfer";
 
 export default function App() {
   const { session, loading, login, logout } = useKioskSession();
@@ -125,11 +127,13 @@ export default function App() {
   if (screen === "ktx")
     return guard(<KtxPracticeScreen onBack={() => setScreen("menu")} token={session.token} />);
   if (screen === "kakaopay")
-    return guard(<KakaoPayHubScreen onBack={() => setScreen("menu")} onLogin={() => setScreen("kakaopay-login")} onAccount={() => setScreen("kakaopay-account")} />);
+    return guard(<KakaoPayHubScreen onBack={() => setScreen("menu")} onLogin={() => setScreen("kakaopay-login")} onAccount={() => setScreen("kakaopay-account")} onTransfer={() => setScreen("kakaopay-transfer")} />);
   if (screen === "kakaopay-login")
     return guard(<KakaoPayPracticeScreen onBack={() => setScreen("kakaopay")} token={session.token} />);
   if (screen === "kakaopay-account")
     return guard(<KakaoPayAccountScreen onBack={() => setScreen("kakaopay")} token={session.token} />);
+  if (screen === "kakaopay-transfer")
+    return guard(<KakaoPayTransferScreen onBack={() => setScreen("kakaopay")} token={session.token} />);
   return guard(
     <MenuScreen
       session={session}

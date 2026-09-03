@@ -11,7 +11,8 @@ export type PracticeService =
   | "GOV24_MOBILE_ID"
   | "KTX_BOOKING"
   | "KAKAOPAY_LOGIN"
-  | "KAKAOPAY_ACCOUNT";
+  | "KAKAOPAY_ACCOUNT"
+  | "KAKAOPAY_TRANSFER";
 
 export type PracticeSessionRecord = {
   id: number;

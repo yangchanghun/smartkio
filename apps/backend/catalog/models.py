@@ -47,6 +47,7 @@ class PracticeSession(models.Model):
         ("KTX_BOOKING", "KTX 예매"),
         ("KAKAOPAY_LOGIN", "카카오페이 로그인"),
         ("KAKAOPAY_ACCOUNT", "카카오페이 계좌 연결"),
+        ("KAKAOPAY_TRANSFER", "카카오페이 송금"),
     ]
     STATUS_CHOICES = [
         ("IN_PROGRESS", "진행 중"),
