@@ -2,14 +2,14 @@
   "expo": {
     "name": "스마트키오",
     "slug": "smartkio-kiosk",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/smart-kio-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "android": {
       "package": "com.smartkio.kiosk",
-      "versionCode": 3,
+      "versionCode": 4,
       "icon": "./assets/smart-kio-icon.png"
     },
     "plugins": [
