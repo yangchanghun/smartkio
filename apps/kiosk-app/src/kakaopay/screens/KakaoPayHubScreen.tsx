@@ -1,0 +1,15 @@
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+
+export function KakaoPayHubScreen({onBack,onLogin,onAccount}:{onBack:()=>void;onLogin:()=>void;onAccount:()=>void}) {
+  return <SafeAreaView style={s.safe}><View style={s.page}>
+    <View style={s.header}><Pressable onPress={onBack}><Text style={s.back}>‹</Text></Pressable><View style={s.brand}><View style={s.dot}/><Text style={s.pay}>pay</Text></View><View style={{width:35}}/></View>
+    <View style={s.hero}><Text style={s.eyebrow}>카카오페이 따라하기</Text><Text style={s.title}>어떤 연습을{`\n`}시작할까요?</Text><Text style={s.subtitle}>로그인부터 계좌 연결까지 차근차근 연습해 보세요.</Text></View>
+    <View style={s.cards}>
+      <Pressable style={s.card} onPress={onLogin}><View style={s.iconYellow}><Text style={s.icon}>●</Text></View><View style={s.cardBody}><Text style={s.cardStep}>첫 번째 연습</Text><Text style={s.cardTitle}>카카오 로그인</Text><Text style={s.cardText}>카카오톡 인증으로 로그인하는 방법을 연습해요.</Text></View><Text style={s.arrow}>›</Text></Pressable>
+      <Pressable style={s.card} onPress={onAccount}><View style={s.iconBlue}><Text style={s.bankIcon}>▰</Text></View><View style={s.cardBody}><Text style={s.cardStep}>두 번째 연습</Text><Text style={s.cardTitle}>계좌 연결하기</Text><Text style={s.cardText}>은행 계좌를 선택하고 인증해 연결하는 방법을 연습해요.</Text></View><Text style={s.arrow}>›</Text></Pressable>
+    </View>
+    <View style={s.notice}><Text style={s.noticeTitle}>안심하고 연습하세요</Text><Text style={s.noticeText}>실제 로그인, 계좌 연결, 송금은 진행되지 않습니다.</Text></View>
+  </View></SafeAreaView>
+}
+
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:"#fff"},page:{flex:1,width:"100%",maxWidth:980,alignSelf:"center",backgroundColor:"#f6f6f6"},header:{height:76,backgroundColor:"white",flexDirection:"row",alignItems:"center",justifyContent:"space-between",paddingHorizontal:22},back:{fontSize:43},brand:{flexDirection:"row",alignItems:"center",gap:5},dot:{width:22,height:17,borderRadius:10,backgroundColor:"#c6b4ed"},pay:{fontSize:27,fontWeight:"900"},hero:{backgroundColor:"#fee500",padding:30,paddingVertical:38},eyebrow:{fontSize:15,fontWeight:"800",color:"#5f5200"},title:{fontSize:36,lineHeight:47,fontWeight:"900",marginTop:9},subtitle:{fontSize:16,color:"#5f570e",marginTop:14},cards:{padding:20,gap:16},card:{minHeight:150,backgroundColor:"white",borderRadius:20,padding:20,flexDirection:"row",alignItems:"center",elevation:3},iconYellow:{width:72,height:72,borderRadius:22,backgroundColor:"#fff7bc",alignItems:"center",justifyContent:"center"},iconBlue:{width:72,height:72,borderRadius:22,backgroundColor:"#e5f3ff",alignItems:"center",justifyContent:"center"},icon:{fontSize:34,color:"#3c1e1e"},bankIcon:{fontSize:40,color:"#43a3e9"},cardBody:{flex:1,minWidth:0,marginLeft:17},cardStep:{fontSize:13,color:"#777"},cardTitle:{fontSize:24,fontWeight:"900",marginTop:5},cardText:{fontSize:14,lineHeight:21,color:"#666",marginTop:7},arrow:{fontSize:38,color:"#999"},notice:{marginHorizontal:20,marginTop:"auto",marginBottom:28,backgroundColor:"#fff9db",borderRadius:14,padding:18},noticeTitle:{fontSize:16,fontWeight:"900"},noticeText:{fontSize:14,color:"#706820",marginTop:6}});

@@ -9,12 +9,14 @@ const categories = [
 
 export function DeliveryHomeScreen({
   address,
+  hasSelectedAddress,
   onOpenAddress,
   onBack,
   onSelectCategory,
   onWrongPress,
 }: {
   address: DeliveryAddress;
+  hasSelectedAddress: boolean;
   onOpenAddress: () => void;
   onBack: () => void;
   onSelectCategory: (category: string) => void;
@@ -27,7 +29,12 @@ export function DeliveryHomeScreen({
           <View style={s.header}>
             <Pressable onPress={onBack} hitSlop={10}><Text style={s.back}>‹</Text></Pressable>
             <Pressable style={s.addressButton} onPress={onOpenAddress}>
-              <Text style={s.addressText} numberOfLines={1}>{address.name}</Text>
+              <View style={s.addressCopy}>
+                <Text style={s.addressLabel}>배달주소</Text>
+                <Text style={[s.addressText, !hasSelectedAddress && s.addressPlaceholder]} numberOfLines={1}>
+                  {hasSelectedAddress ? address.name : "배달주소를 입력해주세요"}
+                </Text>
+              </View>
               <Text style={s.chevron}>⌄</Text>
             </Pressable>
             <View style={s.headerActions}>
@@ -93,8 +100,11 @@ const s = StyleSheet.create({
   mintArea: { backgroundColor: "#e0faf5", paddingTop: 8, paddingHorizontal: 18, paddingBottom: 26 },
   header: { minHeight: 64, flexDirection: "row", alignItems: "center" },
   back: { fontSize: 43, lineHeight: 45, fontWeight: "300" },
-  addressButton: { flex: 1, marginLeft: 8, flexDirection: "row", alignItems: "center" },
+  addressButton: { flex: 1, minHeight: 58, marginLeft: 8, flexDirection: "row", alignItems: "center" },
+  addressCopy: { flex: 1, justifyContent: "center" },
+  addressLabel: { marginBottom: 2, color: "#5c716d", fontSize: 11, fontWeight: "800" },
   addressText: { maxWidth: "85%", fontSize: 21, fontWeight: "900" },
+  addressPlaceholder: { maxWidth: "100%", color: "#505b59", fontSize: 17 },
   chevron: { marginLeft: 6, fontSize: 18, fontWeight: "900" },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 14 },
   headerIcon: { fontSize: 24 },

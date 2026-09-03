@@ -15,12 +15,14 @@ const items = [
   //   ["jeju", "제주항공", "#ff9400", "jeju-air.png"],
   //   ["ktx", "KTX 예약 앱", "#31bdbc", "ktx.png"],
   //   ["phone", "스마트폰 기본 사용\n가이드", "#31bdbc", "smartphone-guide.png"],
-  ["voice", "보이스피싱퀴즈", "#ff6a6d", "voice-phishing.png"],
+
   ["baemin", "배달의민족", "#31bdbc", "baemin.png"],
   ["kakao", "카카오톡", "#fee500"],
-  //   ["coupang", "쿠팡", "#447fe9", "coupang.png"],
-  //   ["pay", "카카오페이", "#fee500", "kakao-pay.png"],
+  ["coupang", "쿠팡", "#447fe9", "coupang.png"],
+  ["gov24", "정부24", "#e8f3ff", "goverment.png"],
+  ["pay", "카카오페이", "#fee500"],
   ["taxi", "카카오T", "#fee500", "kakao-t.png"],
+  ["ktx", "KTX예약", "#fee500", "ktx.png"],
   //   ["naver", "네이버지도", "#20bd3b", "naver-map.png"],
 ] as const;
 export function MenuScreen({
@@ -29,12 +31,20 @@ export function MenuScreen({
   onStart,
   onStartDelivery,
   onStartTaxi,
+  onStartCoupang,
+  onStartGov24,
+  onStartKtx,
+  onStartKakaoPay,
 }: {
   session: Session;
   onLogout: () => void;
   onStart: () => void;
   onStartDelivery: () => void;
   onStartTaxi: () => void;
+  onStartCoupang: () => void;
+  onStartGov24: () => void;
+  onStartKtx: () => void;
+  onStartKakaoPay: () => void;
 }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 600;
@@ -88,7 +98,15 @@ export function MenuScreen({
                   ? onStartDelivery
                   : id === "taxi"
                     ? onStartTaxi
-                    : undefined
+                    : id === "coupang"
+                      ? onStartCoupang
+                      : id === "gov24"
+                        ? onStartGov24
+                        : id === "ktx"
+                          ? onStartKtx
+                          : id === "pay"
+                            ? onStartKakaoPay
+                        : undefined
             }
           >
             <View
@@ -116,6 +134,33 @@ export function MenuScreen({
                 <View style={s.taxiIcon}>
                   <Text style={s.taxiIconText}>T</Text>
                 </View>
+              ) : id === "coupang" ? (
+                <View style={s.coupangIcon}>
+                  <Text style={s.coupangIconText}>C</Text>
+                </View>
+              ) : id === "gov24" ? (
+                <View style={s.govIcon}>
+                  <Image
+                    source={require("../../assets/goverment/goverment.png")}
+                    style={s.govLogoImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              ) : id === "ktx" ? (
+                <Image
+                  source={require("../../assets/menu/ktx.png")}
+                  style={[
+                    s.ktxIcon,
+                    isCompact && s.ktxIconCompact,
+                    isMobile && s.ktxIconMobile,
+                  ]}
+                  resizeMode="contain"
+                />
+              ) : id === "pay" ? (
+                <View style={s.payIcon}>
+                  <Text style={s.payBubble}>●</Text>
+                  <Text style={s.payWord}>pay</Text>
+                </View>
               ) : null}
             </View>
             <Text
@@ -124,6 +169,9 @@ export function MenuScreen({
                 isCompact && s.titleCompact,
                 isMobile && s.titleMobile,
                 id === "kakao" && s.dark,
+                id === "pay" && s.dark,
+                id === "gov24" && s.govTitle,
+                id === "ktx" && s.ktxTitle,
               ]}
             >
               {title}
@@ -238,6 +286,39 @@ const s = StyleSheet.create({
     transform: [{ rotate: "-4deg" }],
   },
   deliveryIconText: { color: "#18aaa2", fontSize: 25, fontWeight: "900" },
-  taxiIcon: { width: 78, height: 78, borderRadius: 24, backgroundColor: "#1c1c1c", alignItems: "center", justifyContent: "center" },
+  taxiIcon: {
+    width: 78,
+    height: 78,
+    borderRadius: 24,
+    backgroundColor: "#1c1c1c",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   taxiIconText: { color: "#fee500", fontSize: 45, fontWeight: "900" },
+  coupangIcon: {
+    width: 82,
+    height: 82,
+    borderRadius: 22,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  coupangIconText: { color: "#447fe9", fontSize: 48, fontWeight: "900" },
+  govIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 24,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  govLogoImage: { width: 76, height: 76 },
+  govTitle: { color: "#173a69" },
+  ktxIcon: { width: 116, height: 116, borderRadius: 22 },
+  ktxIconCompact: { width: 90, height: 90, borderRadius: 18 },
+  ktxIconMobile: { width: 66, height: 66, borderRadius: 14 },
+  ktxTitle: { color: "#172b45" },
+  payIcon: { width: 94, height: 78, borderRadius: 22, backgroundColor: "white", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  payBubble: { color: "#cbb9ff", fontSize: 26 },
+  payWord: { color: "#111", fontSize: 27, fontWeight: "900" },
 });

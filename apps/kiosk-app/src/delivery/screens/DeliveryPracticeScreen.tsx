@@ -24,6 +24,7 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
   const [cartItems, setCartItems] = useState<ChickenMenuItem[]>([]);
   const [challengeRound, setChallengeRound] = useState(false);
   const [address, setAddress] = useState(SAMPLE_ADDRESSES[0]);
+  const [hasSelectedAddress, setHasSelectedAddress] = useState(false);
   const [mission, setMission] = useState<"address" | "category" | "store" | "menu" | "add" | "extra" | "extraAdd" | "cart" | "order" | "payment" | "done">("address");
   const [missionVisible, setMissionVisible] = useState(true);
   const cartTotal = cartItems.reduce((sum, item) => sum + Number(item.price.replace(/[^0-9]/g, "")), 0);
@@ -42,6 +43,7 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
 
   const selectAddress = (selected: DeliveryAddress) => {
     setAddress(selected);
+    setHasSelectedAddress(true);
     setPage("home");
     setMission("category");
     setMissionVisible(true);
@@ -172,7 +174,7 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
   };
   const restartPractice = () => {
     void restartPracticeSession().catch(() => undefined);
-    setAddress(SAMPLE_ADDRESSES[0]); setSelectedStore(CHICKEN_STORES[0]); setSelectedMenu(CHICKEN_MENU_ITEMS[0]); setCartItems([]); setChallengeRound(false);
+    setAddress(SAMPLE_ADDRESSES[0]); setHasSelectedAddress(false); setSelectedStore(CHICKEN_STORES[0]); setSelectedMenu(CHICKEN_MENU_ITEMS[0]); setCartItems([]); setChallengeRound(false);
     setMission("address"); setPage("home"); setMissionVisible(true);
     speak("배달의민족 연습을 처음부터 다시 시작합니다. 홈 화면 맨 위의 배달 주소를 눌러 주세요.");
   };
@@ -219,6 +221,7 @@ export function DeliveryPracticeScreen({ onBack, token }: { onBack: () => void; 
         {page === "home" ? (
           <DeliveryHomeScreen
             address={address}
+            hasSelectedAddress={hasSelectedAddress}
             onOpenAddress={mission === "address" ? openAddress : wrongAction}
             onBack={onBack}
             onSelectCategory={selectCategory}

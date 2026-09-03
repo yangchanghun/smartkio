@@ -5,7 +5,13 @@ export type PracticeService =
   | "KAKAOTALK"
   | "TAXI"
   | "COUPANG_SIGNUP"
-  | "COUPANG_SHOPPING";
+  | "COUPANG_SHOPPING"
+  | "GOV24_LOGIN"
+  | "GOV24_TRANSCRIPT"
+  | "GOV24_MOBILE_ID"
+  | "KTX_BOOKING"
+  | "KAKAOPAY_LOGIN"
+  | "KAKAOPAY_ACCOUNT";
 
 export type PracticeSessionRecord = {
   id: number;

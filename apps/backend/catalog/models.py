@@ -45,6 +45,8 @@ class PracticeSession(models.Model):
         ("GOV24_TRANSCRIPT", "주민등록표 초본 발급"),
         ("GOV24_MOBILE_ID", "모바일 주민등록증"),
         ("KTX_BOOKING", "KTX 예매"),
+        ("KAKAOPAY_LOGIN", "카카오페이 로그인"),
+        ("KAKAOPAY_ACCOUNT", "카카오페이 계좌 연결"),
     ]
     STATUS_CHOICES = [
         ("IN_PROGRESS", "진행 중"),

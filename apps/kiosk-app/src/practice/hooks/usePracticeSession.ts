@@ -51,19 +51,26 @@ export function usePracticeSession(token: string, service: PracticeService) {
   }, [service, token]);
 
   const completePractice = useCallback(async () => {
-    const sessionId = await sessionPromise.current;
+    let sessionId: number | undefined;
+    try {
+      sessionId = await sessionPromise.current ?? undefined;
+    } catch {
+      sessionId = await begin();
+    }
     if (!sessionId || terminal.current) return;
     await completePracticeSession(token, sessionId);
     terminal.current = true;
-  }, [token]);
+  }, [begin, token]);
 
   const restartPracticeSession = useCallback(async () => {
-    if (!terminal.current) {
-      const sessionId = await sessionPromise.current;
-      if (sessionId) {
-        await abandonPracticeSession(token, sessionId, "RESTARTED");
+    try {
+      if (!terminal.current) {
+        const sessionId = await sessionPromise.current;
+        if (sessionId) {
+          await abandonPracticeSession(token, sessionId, "RESTARTED");
+        }
       }
-    }
+    } catch {}
     return begin();
   }, [begin, token]);
 

@@ -1,12 +1,189 @@
 import { useState } from "react";
-import { Keyboard, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Keyboard,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { KakaoMapView } from "../components/KakaoMapView";
-import { SAMPLE_TAXI_PLACES, type PlaceRole, type TaxiPlace } from "./TaxiDestinationScreen";
+import {
+  SAMPLE_TAXI_PLACES,
+  type PlaceRole,
+  type TaxiPlace,
+} from "./TaxiDestinationScreen";
 
-export function TaxiMapSearchScreen({role,initialQuery,onBack,onSelect}:{role:PlaceRole;initialQuery:string;onBack:()=>void;onSelect:(place:TaxiPlace)=>void}){
-  const [input,setInput]=useState(initialQuery); const [searchQuery,setSearchQuery]=useState(initialQuery); const [results,setResults]=useState<TaxiPlace[]>([]); const [centerPlace,setCenterPlace]=useState<TaxiPlace>(SAMPLE_TAXI_PLACES[0]);
-  const localResults=searchQuery?SAMPLE_TAXI_PLACES.filter((p)=>`${p.name} ${p.address}`.includes(searchQuery)):[]; const visibleResults=results.length?results:localResults;
-  const search=()=>{Keyboard.dismiss();setResults([]);setSearchQuery(input.trim());}; const label=role==="departure"?"출발지":"도착지";
-  return <SafeAreaView style={s.safe}><View style={s.map}><KakaoMapView query={searchQuery} onPlaces={setResults} onCenter={setCenterPlace}/><View style={s.searchBar}><Pressable onPress={onBack}><Text style={s.back}>‹</Text></Pressable><TextInput autoFocus={!initialQuery} value={input} onChangeText={setInput} onSubmitEditing={search} placeholder={`${label} 검색`} placeholderTextColor="#8c929b" style={s.input} returnKeyType="search"/><Pressable onPress={search}><Text style={s.searchIcon}>⌕</Text></Pressable></View><View style={s.pin}><Text style={s.pinText}>{role==="departure"?"출발":"도착"}</Text></View></View><View style={s.sheet}><View style={s.handle}/>{visibleResults.length?<><Text style={s.sheetTitle}>검색 결과</Text><ScrollView style={s.results} keyboardShouldPersistTaps="handled">{visibleResults.map((place)=><Pressable key={`${place.name}-${place.address}`} style={s.result} onPress={()=>onSelect(place)}><View style={s.resultText}><Text style={s.name}>{place.name}</Text><Text style={s.address}>{place.address}</Text></View><Text style={s.choose}>선택</Text></Pressable>)}</ScrollView></>:<><Text style={s.sheetLabel}>지도를 움직여 {label}를 정하세요</Text><Text style={s.centerName}>{centerPlace.name}</Text><Text style={s.address}>{centerPlace.address}</Text><Pressable style={s.confirm} onPress={()=>onSelect(centerPlace)} accessibilityRole="button" accessibilityLabel={`이 위치를 ${label}로 설정`}><Text style={s.confirmText}>이 위치로 설정</Text></Pressable></>}</View></SafeAreaView>;
+export function TaxiMapSearchScreen({
+  role,
+  initialQuery,
+  onBack,
+  onSelect,
+}: {
+  role: PlaceRole;
+  initialQuery: string;
+  onBack: () => void;
+  onSelect: (place: TaxiPlace) => void;
+}) {
+  const [input, setInput] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [results, setResults] = useState<TaxiPlace[]>([]);
+  const [centerPlace, setCenterPlace] = useState<TaxiPlace>(
+    SAMPLE_TAXI_PLACES[0],
+  );
+  const localResults = searchQuery
+    ? SAMPLE_TAXI_PLACES.filter((p) =>
+        `${p.name} ${p.address}`.includes(searchQuery),
+      )
+    : [];
+  const visibleResults = results.length ? results : localResults;
+  const search = () => {
+    Keyboard.dismiss();
+    setResults([]);
+    setSearchQuery(input.trim());
+  };
+  const label = role === "departure" ? "출발지" : "도착지";
+  return (
+    <SafeAreaView style={s.safe}>
+      <View style={s.map}>
+        <KakaoMapView
+          query={searchQuery}
+          onPlaces={setResults}
+          onCenter={setCenterPlace}
+        />
+        <View style={s.searchBar}>
+          <Pressable onPress={onBack}>
+            <Text style={s.back}>‹</Text>
+          </Pressable>
+          <TextInput
+            autoFocus={!initialQuery}
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={search}
+            placeholder={`${label} 검색`}
+            placeholderTextColor="#8c929b"
+            style={s.input}
+            returnKeyType="search"
+          />
+          <Pressable onPress={search}>
+            <Text style={s.searchIcon}>⌕</Text>
+          </Pressable>
+        </View>
+        <View style={s.pin}>
+          <Text style={s.pinText}>
+            {role === "departure" ? "출발" : "도착"}
+          </Text>
+        </View>
+      </View>
+      <View style={s.sheet}>
+        <View style={s.handle} />
+        {visibleResults.length ? (
+          <>
+            <Text style={s.sheetTitle}>검색 결과</Text>
+            <ScrollView style={s.results} keyboardShouldPersistTaps="handled">
+              {visibleResults.map((place) => (
+                <Pressable
+                  key={`${place.name}-${place.address}`}
+                  style={s.result}
+                  onPress={() => onSelect(place)}
+                >
+                  <View style={s.resultText}>
+                    <Text style={s.name}>{place.name}</Text>
+                    <Text style={s.address}>{place.address}</Text>
+                  </View>
+                  <Text style={s.choose}>선택</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        ) : (
+          <>
+            <Text style={s.sheetLabel}>지도를 움직여 {label}를 정하세요</Text>
+            <Text style={s.centerName}>{centerPlace.name}</Text>
+            <Text style={s.address}>{centerPlace.address}</Text>
+            <Pressable
+              style={s.confirm}
+              onPress={() => onSelect(centerPlace)}
+              accessibilityRole="button"
+              accessibilityLabel={`이 위치를 ${label}로 설정`}
+            >
+              <Text style={s.confirmText}>이 위치로 설정</Text>
+            </Pressable>
+          </>
+        )}
+      </View>
+    </SafeAreaView>
+  );
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:"white"},map:{flex:1,position:"relative"},searchBar:{position:"absolute",left:18,right:18,top:18,height:62,borderRadius:18,backgroundColor:"white",flexDirection:"row",alignItems:"center",paddingHorizontal:14,elevation:8},back:{fontSize:43,lineHeight:45,color:"#252b35",marginRight:8},input:{flex:1,fontSize:20,color:"#222",padding:0},searchIcon:{fontSize:30,color:"#2e343d",padding:8},pin:{position:"absolute",left:"44%",top:"50%",backgroundColor:"#222",paddingHorizontal:14,paddingVertical:9,borderRadius:5},pinText:{color:"white",fontWeight:"900"},sheet:{maxHeight:"45%",backgroundColor:"white",borderTopLeftRadius:26,borderTopRightRadius:26,padding:20,elevation:12},handle:{width:42,height:4,borderRadius:2,backgroundColor:"#d5d7da",alignSelf:"center",marginBottom:15},sheetTitle:{fontSize:19,fontWeight:"900",marginBottom:8},results:{maxHeight:270},result:{flexDirection:"row",alignItems:"center",paddingVertical:13,borderBottomWidth:1,borderColor:"#eee"},resultText:{flex:1},name:{fontSize:17,fontWeight:"800",color:"#252a32"},address:{fontSize:14,color:"#7b828c",marginTop:4},choose:{fontSize:14,color:"#3971b9",fontWeight:"800",padding:8},sheetLabel:{fontSize:14,color:"#888",marginBottom:6},centerName:{fontSize:19,fontWeight:"900",color:"#252a32"},confirm:{height:54,borderRadius:13,backgroundColor:"#fee500",alignItems:"center",justifyContent:"center",marginTop:15},confirmText:{fontSize:18,fontWeight:"900"}});
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: "white" },
+  map: { flex: 1, position: "relative" },
+  searchBar: {
+    position: "absolute",
+    left: 18,
+    right: 18,
+    top: 18,
+    height: 62,
+    borderRadius: 18,
+    backgroundColor: "white",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    elevation: 8,
+  },
+  back: { fontSize: 43, lineHeight: 45, color: "#252b35", marginRight: 8 },
+  input: { flex: 1, fontSize: 20, color: "#222", padding: 0 },
+  searchIcon: { fontSize: 30, color: "#2e343d", padding: 8 },
+  pin: {
+    position: "absolute",
+    left: "44%",
+    top: "50%",
+    backgroundColor: "#222",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 5,
+  },
+  pinText: { color: "white", fontWeight: "900" },
+  sheet: {
+    maxHeight: "45%",
+    backgroundColor: "white",
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    padding: 20,
+    elevation: 12,
+  },
+  handle: {
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#d5d7da",
+    alignSelf: "center",
+    marginBottom: 15,
+  },
+  sheetTitle: { fontSize: 19, fontWeight: "900", marginBottom: 8 },
+  results: { maxHeight: 270 },
+  result: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+  resultText: { flex: 1 },
+  name: { fontSize: 17, fontWeight: "800", color: "#252a32" },
+  address: { fontSize: 14, color: "#7b828c", marginTop: 4 },
+  choose: { fontSize: 14, color: "#3971b9", fontWeight: "800", padding: 8 },
+  sheetLabel: { fontSize: 14, color: "#888", marginBottom: 6 },
+  centerName: { fontSize: 19, fontWeight: "900", color: "#252a32" },
+  confirm: {
+    height: 54,
+    borderRadius: 13,
+    backgroundColor: "#fee500",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 15,
+  },
+  confirmText: { fontSize: 18, fontWeight: "900" },
+});

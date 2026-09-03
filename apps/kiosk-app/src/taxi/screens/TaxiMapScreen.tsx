@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,19 +16,50 @@ import {
 } from "../services/taxiApi";
 import type { TaxiPlace } from "./TaxiDestinationScreen";
 
-type Props = {
-  departure: TaxiPlace;
-  destination: TaxiPlace;
-  token: string;
-  onBack: () => void;
-  onChangeDeparture: () => void;
-  onChangeDestination: () => void;
+export type TaxiVehicle = {
+  id: "blue" | "general" | "venti" | "reserve";
+  icon: string;
+  name: string;
+  description: string;
+  surcharge: number;
+  reservable?: boolean;
 };
 
-const formatMinutes = (seconds: number) => Math.max(1, Math.ceil(seconds / 60));
-const formatDistance = (meters: number) =>
-  meters >= 1000 ? `${(meters / 1000).toFixed(1)}km` : `${meters}m`;
-const formatWon = (value: number) => `${value.toLocaleString("ko-KR")}원`;
+const VEHICLES: TaxiVehicle[] = [
+  {
+    id: "blue",
+    icon: "🚕",
+    name: "블루파트너스",
+    description: "배차될 때까지 찾아주는 제휴 택시",
+    surcharge: 1800,
+  },
+  {
+    id: "general",
+    icon: "🚖",
+    name: "일반호출",
+    description: "주변 택시 호출",
+    surcharge: 0,
+  },
+  {
+    id: "venti",
+    icon: "🚐",
+    name: "벤티 예약",
+    description: "넓고 편안한 대형 차량",
+    surcharge: 5200,
+    reservable: true,
+  },
+  {
+    id: "reserve",
+    icon: "🚕",
+    name: "블루파트너스 예약",
+    description: "원하는 시간에 미리 예약",
+    surcharge: 3500,
+    reservable: true,
+  },
+];
+
+const won = (value: number) => `${value.toLocaleString("ko-KR")}원`;
+const minutes = (seconds: number) => Math.max(1, Math.ceil(seconds / 60));
 
 export function TaxiMapScreen({
   departure,
@@ -35,113 +68,138 @@ export function TaxiMapScreen({
   onBack,
   onChangeDeparture,
   onChangeDestination,
-}: Props) {
+  onSelectVehicle,
+}: {
+  departure: TaxiPlace;
+  destination: TaxiPlace;
+  token: string;
+  onBack: () => void;
+  onChangeDeparture: () => void;
+  onChangeDestination: () => void;
+  onSelectVehicle: (vehicle: TaxiVehicle, preview: TaxiRoutePreview) => void;
+}) {
   const [preview, setPreview] = useState<TaxiRoutePreview | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
-    setPreview(null);
     getTaxiRoutePreview(departure, destination, token)
       .then((result) => active && setPreview(result))
-      .catch((reason: unknown) => {
-        if (active) {
+      .catch(
+        (reason: unknown) =>
+          active &&
           setError(
             reason instanceof Error
               ? reason.message
-              : "예상 시간과 요금을 불러오지 못했습니다.",
-          );
-        }
-      })
+              : "경로를 불러오지 못했습니다.",
+          ),
+      )
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
   }, [departure, destination, token]);
+  const eta = useMemo(
+    () => (preview ? minutes(preview.duration_seconds) : 0),
+    [preview],
+  );
 
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.map}>
         <KakaoMapView center={departure} routePath={preview?.path} />
-        <Pressable style={s.back} onPress={onBack} accessibilityLabel="뒤로 가기">
-          <Text style={s.backText}>‹</Text>
-        </Pressable>
-        {!preview ? (
-          <View style={s.pin}>
-            <Text style={s.pinText}>출발</Text>
+        <View style={s.routeHeader}>
+          <Pressable onPress={onBack}>
+            <Text style={s.close}>×</Text>
+          </Pressable>
+          <Pressable style={s.headerPlace} onPress={onChangeDeparture}>
+            <Text numberOfLines={1} style={s.headerText}>
+              {departure.name}
+            </Text>
+          </Pressable>
+          <Text style={s.arrow}>›</Text>
+          <Pressable style={s.headerPlace} onPress={onChangeDestination}>
+            <Text numberOfLines={1} style={s.headerText}>
+              {destination.name}
+            </Text>
+          </Pressable>
+        </View>
+        {preview ? (
+          <View style={s.etaBadge}>
+            <Text style={s.etaLabel}>도착</Text>
+            <Text style={s.etaText}>{eta}분 예상</Text>
           </View>
         ) : null}
-        <Pressable style={s.locate} accessibilityLabel="현재 위치로 이동">
-          <Text style={s.locateText}>⌖</Text>
-        </Pressable>
       </View>
       <View style={s.sheet}>
         <View style={s.handle} />
-        <Pressable style={s.route} onPress={onChangeDeparture}>
-          <Text style={s.startDot}>●</Text>
-          <View style={s.routeText}>
-            <Text style={s.label}>출발</Text>
-            <Text style={s.value}>{departure.name}</Text>
-            <Text style={s.address}>{departure.address}</Text>
+        <View style={s.tabs}>
+          <View style={s.tabActive}>
+            <Text style={s.tabActiveText}>모든 호출</Text>
           </View>
-          <Text style={s.change}>변경</Text>
-        </Pressable>
-        <View style={s.line} />
-        <Pressable style={s.route} onPress={onChangeDestination}>
-          <Text style={s.endDot}>●</Text>
-          <View style={s.routeText}>
-            <Text style={s.label}>도착</Text>
-            <Text style={s.value}>{destination.name}</Text>
-            <Text style={s.address}>{destination.address}</Text>
-          </View>
-          <Text style={s.change}>변경</Text>
-        </Pressable>
-
-        <View style={s.previewCard}>
-          {loading ? (
-            <View style={s.loadingRow}>
-              <ActivityIndicator color="#d9272e" />
-              <Text style={s.loadingText}>예상 시간과 요금을 계산하고 있어요</Text>
-            </View>
-          ) : preview ? (
-            <>
-              <View style={s.previewMain}>
-                <View>
-                  <Text style={s.previewLabel}>예상 소요 시간</Text>
-                  <Text style={s.previewTime}>약 {formatMinutes(preview.duration_seconds)}분</Text>
-                </View>
-                <View style={s.fareArea}>
-                  <Text style={s.previewLabel}>예상 택시비</Text>
-                  <Text style={s.previewFare}>{formatWon(preview.taxi_fare)}</Text>
-                </View>
-              </View>
-              <Text style={s.previewSub}>
-                이동 거리 {formatDistance(preview.distance_meters)}
-                {preview.toll_fare > 0
-                  ? ` · 통행료 ${formatWon(preview.toll_fare)}`
-                  : " · 통행료 없음"}
-              </Text>
-              <Text style={s.notice}>교통 상황과 실제 운행 경로에 따라 달라질 수 있어요.</Text>
-            </>
-          ) : (
-            <View>
-              <Text style={s.errorTitle}>예상 요금을 표시하지 못했어요</Text>
-              <Text style={s.errorText}>{error}</Text>
-            </View>
-          )}
+          <Pressable
+            style={s.tab}
+            onPress={() =>
+              Alert.alert(
+                "연습 안내",
+                "이번 미션은 지금 바로 부르는 ‘모든 호출’을 선택해 주세요.",
+              )
+            }
+          >
+            <Text style={s.tabText}>원하는 시간으로 호출</Text>
+          </Pressable>
         </View>
-
-        <Pressable
-          style={[s.next, (!preview || loading) && s.nextDisabled]}
-          disabled={!preview || loading}
-          accessibilityRole="button"
-          accessibilityLabel="택시 선택하기"
-        >
-          <Text style={s.nextText}>택시 선택하기</Text>
-        </Pressable>
+        {loading ? (
+          <View style={s.loading}>
+            <ActivityIndicator size="large" color="#1677ff" />
+            <Text style={s.loadingText}>
+              주변 차량과 예상 요금을 찾고 있어요
+            </Text>
+          </View>
+        ) : error ? (
+          <View style={s.loading}>
+            <Text style={s.error}>{error}</Text>
+          </View>
+        ) : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={s.list}
+          >
+            <Text style={s.guide}>차량을 하나 선택해 보세요</Text>
+            {VEHICLES.map((vehicle) => (
+              <Pressable
+                key={vehicle.id}
+                style={s.vehicle}
+                onPress={() =>
+                  vehicle.reservable
+                    ? Alert.alert(
+                        "예약 호출",
+                        "예약 호출은 다음 연습에서 배워요. 지금은 일반호출 또는 블루파트너스를 선택해 주세요.",
+                      )
+                    : preview && onSelectVehicle(vehicle, preview)
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`${vehicle.name} 선택`}
+              >
+                <Text style={s.vehicleIcon}>{vehicle.icon}</Text>
+                <View style={s.vehicleText}>
+                  <Text style={s.vehicleName}>{vehicle.name}</Text>
+                  <Text style={s.vehicleDesc}>{vehicle.description}</Text>
+                  {vehicle.reservable ? (
+                    <Text style={s.reserve}>◷ 10분 이후 출발</Text>
+                  ) : null}
+                </View>
+                <Text style={s.price}>
+                  {preview
+                    ? `예상 ${won(preview.taxi_fare + vehicle.surcharge)}`
+                    : ""}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -149,37 +207,115 @@ export function TaxiMapScreen({
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "white" },
-  map: { flex: 1, position: "relative" },
-  back: { position: "absolute", top: 24, left: 22, width: 56, height: 56, borderRadius: 28, backgroundColor: "white", alignItems: "center", justifyContent: "center", elevation: 6 },
-  backText: { fontSize: 45, lineHeight: 45, color: "#29303a" },
-  pin: { position: "absolute", top: "51%", left: "45%", backgroundColor: "#282828", borderRadius: 5, paddingHorizontal: 15, paddingVertical: 10, elevation: 4 },
-  pinText: { color: "white", fontSize: 16, fontWeight: "900" },
-  locate: { position: "absolute", right: 22, bottom: 22, width: 56, height: 56, borderRadius: 28, backgroundColor: "white", alignItems: "center", justifyContent: "center", elevation: 5 },
-  locateText: { fontSize: 30, color: "#29303a" },
-  sheet: { backgroundColor: "white", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingTop: 10, paddingBottom: 22, elevation: 10 },
-  handle: { alignSelf: "center", width: 42, height: 4, borderRadius: 2, backgroundColor: "#d4d7da", marginBottom: 10 },
-  route: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 8 },
-  startDot: { fontSize: 12, color: "#333", marginTop: 7, marginRight: 14 },
-  endDot: { fontSize: 12, color: "#e22b37", marginTop: 7, marginRight: 14 },
-  routeText: { flex: 1 },
-  label: { fontSize: 13, color: "#888", marginBottom: 3 },
-  value: { fontSize: 18, fontWeight: "800", color: "#242931" },
-  address: { fontSize: 13, color: "#818791", marginTop: 3 },
-  change: { fontSize: 14, fontWeight: "800", color: "#3971b9", padding: 8 },
-  line: { height: 1, backgroundColor: "#eceef0", marginLeft: 26 },
-  previewCard: { marginTop: 10, borderRadius: 16, padding: 16, backgroundColor: "#f5f6f8", minHeight: 102, justifyContent: "center" },
-  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  loadingText: { color: "#646b75", fontSize: 15, fontWeight: "700" },
-  previewMain: { flexDirection: "row", justifyContent: "space-between" },
-  fareArea: { alignItems: "flex-end" },
-  previewLabel: { color: "#777e87", fontSize: 13, marginBottom: 2 },
-  previewTime: { color: "#202630", fontSize: 23, fontWeight: "900" },
-  previewFare: { color: "#202630", fontSize: 23, fontWeight: "900" },
-  previewSub: { color: "#505762", fontSize: 14, marginTop: 8 },
-  notice: { color: "#9298a0", fontSize: 11, marginTop: 4 },
-  errorTitle: { color: "#303640", fontSize: 15, fontWeight: "800", marginBottom: 4 },
-  errorText: { color: "#858b94", fontSize: 13, lineHeight: 18 },
-  next: { height: 58, borderRadius: 14, backgroundColor: "#fee500", alignItems: "center", justifyContent: "center", marginTop: 13 },
-  nextDisabled: { backgroundColor: "#e4e6e9" },
-  nextText: { fontSize: 20, fontWeight: "900", color: "#222" },
+  map: { height: "43%", position: "relative" },
+  routeHeader: {
+    position: "absolute",
+    top: 22,
+    left: 20,
+    right: 20,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: "white",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 18,
+    elevation: 9,
+  },
+  close: { fontSize: 38, lineHeight: 40, color: "#303640", marginRight: 12 },
+  headerPlace: { flex: 1 },
+  headerText: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#2e343c",
+    textAlign: "center",
+  },
+  arrow: { fontSize: 28, color: "#777", marginHorizontal: 5 },
+  etaBadge: {
+    position: "absolute",
+    right: 24,
+    bottom: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 8,
+    elevation: 5,
+    overflow: "hidden",
+  },
+  etaLabel: {
+    backgroundColor: "#e42635",
+    color: "white",
+    fontSize: 16,
+    fontWeight: "900",
+    padding: 12,
+  },
+  etaText: { fontSize: 16, fontWeight: "900", paddingHorizontal: 14 },
+  sheet: {
+    flex: 1,
+    marginTop: -18,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    backgroundColor: "white",
+    paddingTop: 10,
+    elevation: 12,
+  },
+  handle: {
+    alignSelf: "center",
+    width: 44,
+    height: 4,
+    backgroundColor: "#d0d3d7",
+    borderRadius: 2,
+    marginBottom: 12,
+  },
+  tabs: {
+    height: 58,
+    marginHorizontal: 24,
+    backgroundColor: "#f2f3f5",
+    borderRadius: 29,
+    flexDirection: "row",
+    padding: 4,
+  },
+  tabActive: {
+    flex: 1,
+    borderRadius: 25,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 2,
+  },
+  tab: { flex: 1, alignItems: "center", justifyContent: "center" },
+  tabActiveText: { fontSize: 17, fontWeight: "900", color: "#252a31" },
+  tabText: { fontSize: 16, fontWeight: "700", color: "#777e87" },
+  loading: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingText: { fontSize: 15, color: "#777e87" },
+  error: { fontSize: 15, color: "#d52b35", padding: 25, textAlign: "center" },
+  list: { paddingHorizontal: 24, paddingBottom: 30 },
+  guide: {
+    fontSize: 14,
+    color: "#5d6570",
+    backgroundColor: "#eef4ff",
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginTop: 14,
+  },
+  vehicle: {
+    minHeight: 112,
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderColor: "#eceef0",
+    paddingVertical: 14,
+  },
+  vehicleIcon: { fontSize: 42, width: 62 },
+  vehicleText: { flex: 1 },
+  vehicleName: { fontSize: 19, fontWeight: "900", color: "#242a32" },
+  vehicleDesc: { fontSize: 14, color: "#7b828c", marginTop: 5 },
+  reserve: { fontSize: 13, color: "#1675e7", fontWeight: "800", marginTop: 6 },
+  price: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#2d333b",
+    textAlign: "right",
+  },
 });
