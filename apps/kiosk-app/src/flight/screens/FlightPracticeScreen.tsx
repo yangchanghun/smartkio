@@ -19,8 +19,7 @@ const guides = [
   "출발지 칸을 누르고 원하는 도시를 검색하거나 목록에서 선택해 주세요.",
   "도착지 칸을 누르고 원하는 도시를 검색하거나 목록에서 선택해 주세요.",
   "날짜 칸을 누르고 가는 날과 오는 날을 선택해 주세요.",
-  "탑승객 칸을 누르고 성인, 어린이, 유아 인원을 정해 주세요.",
-  "항공권 검색을 눌러 주세요.",
+  "성인 1명으로 조회하거나, 필요하면 탑승객 수를 변경한 뒤 항공권 검색을 눌러 주세요.",
   "가는 편에서 원하는 항공편을 선택해 주세요.",
   "오는 편에서 원하는 항공편을 선택해 주세요.",
   "선택한 여행 정보를 확인하고 예약하기를 눌러 주세요.",
@@ -174,7 +173,7 @@ export function FlightPracticeScreen({
     <SafeAreaView style={s.safe}>
       <View style={s.shell}>
         {step === 0 && <TripHome onFlight={next} onWrong={() => remind()} />}
-        {step >= 1 && step <= 5 && !editor && (
+        {step >= 1 && step <= 4 && !editor && (
           <SearchCard
             from={from}
             to={to}
@@ -187,7 +186,7 @@ export function FlightPracticeScreen({
             onDates={() => setEditor("dates")}
             onPeople={() => setEditor("people")}
             onSearch={() => {
-              if (step === 5 && from && to && departDay && returnDay) next();
+              if (step === 4 && from && to && departDay && returnDay) next();
               else remind("출발지, 도착지, 날짜, 탑승객을 모두 선택해 주세요.");
             }}
             onBack={previous}
@@ -247,12 +246,11 @@ export function FlightPracticeScreen({
             setInfants={setInfants}
             onConfirm={() => {
               setEditor(null);
-              if (step === 4) next();
             }}
             onBack={() => setEditor(null)}
           />
         )}
-        {step === 6 && (
+        {step === 5 && (
           <FlightList
             route={`${from} ⇄ ${to}`}
             travelDay={departDay!}
@@ -266,7 +264,7 @@ export function FlightPracticeScreen({
             onBack={previous}
           />
         )}
-        {step === 7 && (
+        {step === 6 && (
           <FlightList
             route={`${from} ⇄ ${to}`}
             travelDay={returnDay!}
@@ -280,7 +278,7 @@ export function FlightPracticeScreen({
             onBack={previous}
           />
         )}
-        {step === 8 && out && incoming && (
+        {step === 7 && out && incoming && (
           <Review
             from={from}
             to={to}
@@ -294,7 +292,7 @@ export function FlightPracticeScreen({
             onBack={previous}
           />
         )}
-        {step === 9 && (
+        {step === 8 && (
           <PassengerInfo
             from={from}
             to={to}
@@ -317,7 +315,7 @@ export function FlightPracticeScreen({
             onBack={previous}
           />
         )}
-        {step === 10 && (
+        {step === 9 && (
           <Booked
             from={from}
             to={to}
@@ -336,7 +334,7 @@ export function FlightPracticeScreen({
             }}
           />
         )}
-        {step === 11 && (
+        {step === 10 && (
           <BoardingPass
             from={from}
             to={to}
@@ -347,12 +345,12 @@ export function FlightPracticeScreen({
             onBack={previous}
           />
         )}
-        {step === 12 && <Finished onBack={onBack} onReset={reset} />}
-        {step < 12 && !mission && (
+        {step === 11 && <Finished onBack={onBack} onReset={reset} />}
+        {step < 11 && !mission && (
           <Controls onPrevious={previous} onExit={onBack} />
         )}
         <Mission
-          visible={mission && step < 12}
+          visible={mission && step < 11}
           step={step + 1}
           text={guides[step] || ""}
           onStart={() => setMission(false)}
