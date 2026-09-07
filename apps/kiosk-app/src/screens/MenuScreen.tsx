@@ -23,6 +23,7 @@ const items = [
   ["pay", "카카오페이", "#fee500"],
   ["taxi", "카카오T", "#fee500", "kakao-t.png"],
   ["ktx", "KTX예약", "#fee500", "ktx.png"],
+  ["flight", "항공권 예약", "#315efb"],
   //   ["naver", "네이버지도", "#20bd3b", "naver-map.png"],
 ] as const;
 export function MenuScreen({
@@ -35,6 +36,7 @@ export function MenuScreen({
   onStartGov24,
   onStartKtx,
   onStartKakaoPay,
+  onStartFlight,
 }: {
   session: Session;
   onLogout: () => void;
@@ -45,6 +47,7 @@ export function MenuScreen({
   onStartGov24: () => void;
   onStartKtx: () => void;
   onStartKakaoPay: () => void;
+  onStartFlight: () => void;
 }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 600;
@@ -104,6 +107,8 @@ export function MenuScreen({
                         ? onStartGov24
                         : id === "ktx"
                           ? onStartKtx
+                          : id === "flight"
+                            ? onStartFlight
                           : id === "pay"
                             ? onStartKakaoPay
                         : undefined
@@ -161,6 +166,8 @@ export function MenuScreen({
                   <Text style={s.payBubble}>●</Text>
                   <Text style={s.payWord}>pay</Text>
                 </View>
+              ) : id === "flight" ? (
+                <View style={s.payIcon}><Text style={{fontSize:54}}>✈️</Text></View>
               ) : null}
             </View>
             <Text
@@ -172,6 +179,7 @@ export function MenuScreen({
                 id === "pay" && s.dark,
                 id === "gov24" && s.govTitle,
                 id === "ktx" && s.ktxTitle,
+                id === "flight" && {color:"white"},
               ]}
             >
               {title}

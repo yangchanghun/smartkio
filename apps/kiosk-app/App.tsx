@@ -23,6 +23,7 @@ import { KakaoPayPracticeScreen } from "./src/kakaopay/screens/KakaoPayPracticeS
 import { KakaoPayHubScreen } from "./src/kakaopay/screens/KakaoPayHubScreen";
 import { KakaoPayAccountScreen } from "./src/kakaopay/screens/KakaoPayAccountScreen";
 import { KakaoPayTransferScreen } from "./src/kakaopay/screens/KakaoPayTransferScreen";
+import { FlightPracticeScreen } from "./src/flight/screens/FlightPracticeScreen";
 
 type Screen =
   | "menu"
@@ -44,7 +45,8 @@ type Screen =
   | "kakaopay"
   | "kakaopay-login"
   | "kakaopay-account"
-  | "kakaopay-transfer";
+  | "kakaopay-transfer"
+  | "flight";
 
 export default function App() {
   const { session, loading, login, logout } = useKioskSession();
@@ -134,6 +136,8 @@ export default function App() {
     return guard(<KakaoPayAccountScreen onBack={() => setScreen("kakaopay")} token={session.token} />);
   if (screen === "kakaopay-transfer")
     return guard(<KakaoPayTransferScreen onBack={() => setScreen("kakaopay")} token={session.token} />);
+  if (screen === "flight")
+    return guard(<FlightPracticeScreen onBack={() => setScreen("menu")} token={session.token} />);
   return guard(
     <MenuScreen
       session={session}
@@ -145,6 +149,7 @@ export default function App() {
       onStartGov24={() => setScreen("gov24")}
       onStartKtx={() => setScreen("ktx")}
       onStartKakaoPay={() => setScreen("kakaopay")}
+      onStartFlight={() => setScreen("flight")}
     />
   );
 }

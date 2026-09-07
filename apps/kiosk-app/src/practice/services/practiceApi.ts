@@ -12,7 +12,8 @@ export type PracticeService =
   | "KTX_BOOKING"
   | "KAKAOPAY_LOGIN"
   | "KAKAOPAY_ACCOUNT"
-  | "KAKAOPAY_TRANSFER";
+  | "KAKAOPAY_TRANSFER"
+  | "FLIGHT_BOOKING";
 
 export type PracticeSessionRecord = {
   id: number;
