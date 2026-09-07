@@ -25,7 +25,8 @@ const guides = [
   "오는 편에서 원하는 항공편을 선택해 주세요.",
   "선택한 여행 정보를 확인하고 예약하기를 눌러 주세요.",
   "탑승객의 국적, 영문 이름, 성별, 생년월일을 입력하고 계속을 눌러 주세요.",
-  "예약 완료 화면에서 확인을 눌러 연습을 마쳐 주세요.",
+  "예약 완료 화면에서 확인을 눌러 탑승권을 열어 주세요.",
+  "발급된 모바일 탑승권을 확인하고 연습 완료를 눌러 주세요.",
 ];
 type Flight = {
   time: string;
@@ -335,12 +336,23 @@ export function FlightPracticeScreen({
             }}
           />
         )}
-        {step === 11 && <Finished onBack={onBack} onReset={reset} />}
-        {step < 11 && !mission && (
+        {step === 11 && (
+          <BoardingPass
+            from={from}
+            to={to}
+            departDay={departDay!}
+            flight={out!}
+            passenger={`${lastName} ${firstName}`}
+            onDone={next}
+            onBack={previous}
+          />
+        )}
+        {step === 12 && <Finished onBack={onBack} onReset={reset} />}
+        {step < 12 && !mission && (
           <Controls onPrevious={previous} onExit={onBack} />
         )}
         <Mission
-          visible={mission && step < 11}
+          visible={mission && step < 12}
           step={step + 1}
           text={guides[step] || ""}
           onStart={() => setMission(false)}
@@ -1070,6 +1082,66 @@ function Booked({
     </View>
   );
 }
+const airportCodes: Record<string, string> = {
+  서울: "ICN", 부산: "PUS", 제주: "CJU", 대구: "TAE", 광주: "KWJ",
+  오사카: "KIX", 도쿄: "NRT", 후쿠오카: "FUK", 삿포로: "CTS", 오키나와: "OKA",
+  베이징: "PEK", 상하이: "PVG", 홍콩: "HKG", 타이베이: "TPE", 방콕: "BKK",
+  다낭: "DAD", 싱가포르: "SIN", 괌: "GUM",
+};
+function BoardingPass({
+  from,
+  to,
+  departDay,
+  flight,
+  passenger,
+  onDone,
+  onBack,
+}: {
+  from: string;
+  to: string;
+  departDay: number;
+  flight: Flight;
+  passenger: string;
+  onDone: () => void;
+  onBack: () => void;
+}) {
+  const qrPattern = Array.from({ length: 81 }, (_, i) =>
+    [0,1,2,9,11,18,19,20,4,6,12,15,22,24,27,29,31,33,35,37,40,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79,80].includes(i),
+  );
+  return (
+    <View style={[s.page, s.boardingBg]}>
+      <Header title="모바일 탑승권" onBack={onBack} />
+      <ScrollView contentContainerStyle={s.boardingPad}>
+        <Text style={s.boardingHero}>탑승권이 발급되었어요</Text>
+        <Text style={s.boardingSub}>공항에서는 탑승권과 신분증을 함께 준비해 주세요.</Text>
+        <View style={s.boardingCard}>
+          <View style={s.boardingBrand}><Text style={s.boardingBrandText}>SMART AIR</Text><Text style={s.boardingType}>BOARDING PASS</Text></View>
+          <View style={s.boardingRoute}>
+            <View style={s.codeBlock}><Text style={s.airportBig}>{airportCodes[from] || "DEP"}</Text><Text style={s.citySmall}>{from}</Text></View>
+            <View style={s.routePlane}><Text style={s.routeLine}>━━━━ ✈</Text><Text style={s.directText}>직항</Text></View>
+            <View style={[s.codeBlock,{alignItems:"flex-end"}]}><Text style={s.airportBig}>{airportCodes[to] || "ARR"}</Text><Text style={s.citySmall}>{to}</Text></View>
+          </View>
+          <View style={s.ticketDivider}><View style={s.ticketNotchLeft}/><Text style={s.dashLine}>- - - - - - - - - - - - - - - -</Text><View style={s.ticketNotchRight}/></View>
+          <View style={s.boardingDetails}>
+            <TicketField label="탑승객" value={passenger || "PASSENGER"}/>
+            <TicketField label="항공편" value="SK 0908"/>
+            <TicketField label="탑승일" value={dayText(departDay)}/>
+            <TicketField label="출발시간" value={flight.time}/>
+            <TicketField label="게이트" value="A12"/>
+            <TicketField label="좌석" value="18A" highlight/>
+          </View>
+          <View style={s.qrArea}><View style={s.qrBox}>{qrPattern.map((on,i)=><View key={i} style={[s.qrCell,on&&s.qrCellOn]}/>)}</View><View style={{flex:1}}><Text style={s.scanTitle}>탑승 시 QR을 보여주세요</Text><Text style={s.boardingNumber}>교육용 탑승권 · BP-0908-18A</Text></View></View>
+          <View style={s.fakeBanner}><Text style={s.fakeBannerText}>연습용 탑승권입니다 · 실제 탑승에는 사용할 수 없습니다</Text></View>
+        </View>
+        <View style={s.boardingTip}><Text style={s.formTitle}>탑승 전 확인</Text><Text style={s.tipText}>✓ 출발 2시간 전 공항 도착</Text><Text style={s.tipText}>✓ 탑승권과 신분증 준비</Text><Text style={s.tipText}>✓ 탑승구와 탑승 시간 다시 확인</Text></View>
+        <Pressable style={s.blueButton} onPress={onDone}><Text style={s.buttonText}>탑승권 확인 완료</Text></Pressable>
+      </ScrollView>
+    </View>
+  );
+}
+function TicketField({label,value,highlight=false}:{label:string;value:string;highlight?:boolean}) {
+  return <View style={s.ticketField}><Text style={s.ticketFieldLabel}>{label}</Text><Text style={[s.ticketFieldValue,highlight&&s.ticketHighlight]}>{value}</Text></View>;
+}
 function Finished({
   onBack,
   onReset,
@@ -1576,6 +1648,40 @@ const s = StyleSheet.create({
   countrySheet: { backgroundColor: "white", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "78%" },
   countryRow: { minHeight: 58, borderBottomWidth: 1, borderColor: "#eee", flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   countryText: { fontSize: 18, fontWeight: "700" },
+  boardingBg: { backgroundColor: "#edf2fa" },
+  boardingPad: { padding: 20, paddingBottom: 80 },
+  boardingHero: { fontSize: 28, fontWeight: "900", textAlign: "center", marginTop: 10 },
+  boardingSub: { color: "#697386", textAlign: "center", marginTop: 8, marginBottom: 22 },
+  boardingCard: { backgroundColor: "white", borderRadius: 22, overflow: "hidden", elevation: 5 },
+  boardingBrand: { backgroundColor: "#172b65", paddingHorizontal: 22, height: 72, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  boardingBrandText: { color: "white", fontSize: 24, fontWeight: "900" },
+  boardingType: { color: "#cbd7ff", fontSize: 13, fontWeight: "800", letterSpacing: 1 },
+  boardingRoute: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 24 },
+  codeBlock: { flex: 1 },
+  airportBig: { fontSize: 38, fontWeight: "900", color: "#172033" },
+  citySmall: { color: "#697386", fontSize: 16, marginTop: 2 },
+  routePlane: { flex: 1.2, alignItems: "center" },
+  routeLine: { color: BLUE, fontSize: 18 },
+  directText: { color: "#697386", fontSize: 12, marginTop: 4 },
+  ticketDivider: { height: 28, justifyContent: "center", overflow: "hidden" },
+  dashLine: { color: "#c9cfda", textAlign: "center" },
+  ticketNotchLeft: { position: "absolute", left: -14, width: 28, height: 28, borderRadius: 14, backgroundColor: "#edf2fa" },
+  ticketNotchRight: { position: "absolute", right: -14, width: 28, height: 28, borderRadius: 14, backgroundColor: "#edf2fa" },
+  boardingDetails: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 22, paddingBottom: 12 },
+  ticketField: { width: "33.33%", paddingVertical: 10 },
+  ticketFieldLabel: { color: "#7b8495", fontSize: 13 },
+  ticketFieldValue: { color: "#172033", fontSize: 17, fontWeight: "800", marginTop: 5 },
+  ticketHighlight: { color: BLUE, fontSize: 25 },
+  qrArea: { borderTopWidth: 1, borderColor: "#e5e8ee", marginHorizontal: 22, paddingVertical: 20, flexDirection: "row", alignItems: "center", gap: 18 },
+  qrBox: { width: 99, height: 99, flexDirection: "row", flexWrap: "wrap", padding: 5, borderWidth: 1, borderColor: "#172033" },
+  qrCell: { width: 9.7, height: 9.7, backgroundColor: "white" },
+  qrCellOn: { backgroundColor: "#172033" },
+  scanTitle: { fontSize: 17, fontWeight: "900" },
+  boardingNumber: { color: "#7b8495", fontSize: 12, marginTop: 8 },
+  fakeBanner: { backgroundColor: "#fff4d7", padding: 14 },
+  fakeBannerText: { color: "#9b6500", fontWeight: "800", textAlign: "center" },
+  boardingTip: { backgroundColor: "white", borderRadius: 16, padding: 20, marginVertical: 18, gap: 10 },
+  tipText: { color: "#4c5668", fontSize: 16 },
   center: { padding: 30, alignItems: "center", justifyContent: "center" },
   completeCircle: {
     width: 100,
