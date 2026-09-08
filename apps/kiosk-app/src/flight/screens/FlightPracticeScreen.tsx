@@ -188,8 +188,14 @@ export function FlightPracticeScreen({
             onDates={() => setEditor("dates")}
             onPeople={() => setEditor("people")}
             onSearch={() => {
-              if (step === 4 && from && to && departDay && returnDay) next();
-              else remind("출발지, 도착지, 날짜, 탑승객을 모두 선택해 주세요.");
+              if (from && to && departDay && returnDay) {
+                setEditor(null);
+                setWrong("");
+                setStep(5);
+                setMission(true);
+                return;
+              }
+              remind("출발지, 도착지와 날짜를 모두 선택해 주세요.");
             }}
             onBack={previous}
           />
@@ -485,7 +491,7 @@ function CityPicker({
       <Header title={title} onBack={onBack} />
       <View style={s.citySearch}>
         <Text style={s.citySearchIcon} accessibilityElementsHidden>
-🔍
+          🔍
         </Text>
         <TextInput
           value={query}
@@ -516,7 +522,9 @@ function CityPicker({
                     cityName(blocked) === c && s.cityBlocked,
                   ]}
                 >
-                  <Text style={cityName(selected) === c ? s.blueText : undefined}>
+                  <Text
+                    style={cityName(selected) === c ? s.blueText : undefined}
+                  >
                     {locationLabel(c)}
                     {cityName(blocked) === c ? " · 출발지" : ""}
                   </Text>
@@ -532,7 +540,10 @@ function CityPicker({
               <Pressable
                 key={a.code}
                 onPress={() => onPick(`${a.city} (${a.code})`)}
-                style={[s.airport, cityName(blocked) === a.city && s.cityBlocked]}
+                style={[
+                  s.airport,
+                  cityName(blocked) === a.city && s.cityBlocked,
+                ]}
               >
                 <Text style={s.airportTitle}>
                   ✈ {a.code} {a.name}
@@ -573,7 +584,11 @@ const dayText = (value: number | null, weekday = true) => {
 const shiftDate = (value: number, amount: number) => {
   const { year, month, day } = dateParts(value);
   const shifted = new Date(year, month - 1, day + amount);
-  return dateKey(shifted.getFullYear(), shifted.getMonth() + 1, shifted.getDate());
+  return dateKey(
+    shifted.getFullYear(),
+    shifted.getMonth() + 1,
+    shifted.getDate(),
+  );
 };
 function Calendar({
   departDay,
@@ -592,7 +607,9 @@ function Calendar({
   onBack: () => void;
   onWrong: (text: string) => void;
 }) {
-  const initial = departDay ? dateParts(departDay) : { year: 2026, month: 9, day: 1 };
+  const initial = departDay
+    ? dateParts(departDay)
+    : { year: 2026, month: 9, day: 1 };
   const [viewYear, setViewYear] = useState(initial.year);
   const [viewMonth, setViewMonth] = useState(initial.month);
   const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
@@ -624,9 +641,15 @@ function Calendar({
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 180 }}>
         <View style={s.monthNav}>
-          <Pressable onPress={() => changeMonth(-1)} style={s.monthArrow}><Text style={s.monthArrowText}>‹</Text></Pressable>
-          <Text style={s.month}>{viewYear}년 {viewMonth}월</Text>
-          <Pressable onPress={() => changeMonth(1)} style={s.monthArrow}><Text style={s.monthArrowText}>›</Text></Pressable>
+          <Pressable onPress={() => changeMonth(-1)} style={s.monthArrow}>
+            <Text style={s.monthArrowText}>‹</Text>
+          </Pressable>
+          <Text style={s.month}>
+            {viewYear}년 {viewMonth}월
+          </Text>
+          <Pressable onPress={() => changeMonth(1)} style={s.monthArrow}>
+            <Text style={s.monthArrowText}>›</Text>
+          </Pressable>
         </View>
         <Text style={[s.gray, { textAlign: "center", marginBottom: 12 }]}>
           {returnDay
@@ -636,7 +659,9 @@ function Calendar({
               : "먼저 가는 날을 선택해 주세요."}
         </Text>
         <View style={s.days}>
-          {Array.from({ length: firstWeekday }, (_, i) => <View key={`blank-${i}`} style={s.day} />)}
+          {Array.from({ length: firstWeekday }, (_, i) => (
+            <View key={`blank-${i}`} style={s.day} />
+          ))}
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => {
             const value = dateKey(viewYear, viewMonth, d);
             const edge = value === departDay || value === returnDay;
@@ -665,9 +690,13 @@ function Calendar({
             );
           })}
         </View>
-        {viewYear === 2026 && viewMonth === 9 && <View style={s.holidays}>
-          <Text>• 9월 24일 추석 연휴</Text><Text>• 9월 25일 추석</Text><Text>• 9월 26일 추석 연휴</Text>
-        </View>}
+        {viewYear === 2026 && viewMonth === 9 && (
+          <View style={s.holidays}>
+            <Text>• 9월 24일 추석 연휴</Text>
+            <Text>• 9월 25일 추석</Text>
+            <Text>• 9월 26일 추석 연휴</Text>
+          </View>
+        )}
       </ScrollView>
       <View style={s.calendarBottom}>
         <View style={s.rowBetween}>
@@ -879,14 +908,16 @@ function FlightList({
       </View>
       <View style={s.dateStrip}>
         <Text>
-          {dayText(shiftDate(travelDay, -1), false)}{`\n`}195,400원
+          {dayText(shiftDate(travelDay, -1), false)}
+          {`\n`}195,400원
         </Text>
         <Text style={s.dateOn}>
           {dayText(travelDay)}
           {`\n`}155,000원
         </Text>
         <Text>
-          {dayText(shiftDate(travelDay, 1), false)}{`\n`}160,600원
+          {dayText(shiftDate(travelDay, 1), false)}
+          {`\n`}160,600원
         </Text>
       </View>
       <View style={s.sort}>
@@ -1046,11 +1077,18 @@ function PassengerInfo({
 }) {
   const [countryOpen, setCountryOpen] = useState(false);
   const ready = Boolean(
-    nationality && lastName.trim() && firstName.trim() && gender && birth.length === 8,
+    nationality &&
+    lastName.trim() &&
+    firstName.trim() &&
+    gender &&
+    birth.length === 8,
   );
   const continueBooking = () => {
     if (!ready) {
-      Alert.alert("입력 정보를 확인해 주세요", "국적, 영문 성과 이름, 성별, 생년월일 8자리를 모두 입력해 주세요.");
+      Alert.alert(
+        "입력 정보를 확인해 주세요",
+        "국적, 영문 성과 이름, 성별, 생년월일 8자리를 모두 입력해 주세요.",
+      );
       return;
     }
     onContinue();
@@ -1060,29 +1098,135 @@ function PassengerInfo({
       <Header title="정보 입력" onBack={onBack} />
       <ScrollView contentContainerStyle={s.passengerFormPad}>
         <View style={s.progressRow}>
-          <Text style={s.progressActive}>1</Text><Text style={s.progressLine}>―</Text><Text style={s.progressOff}>2</Text><Text style={s.progressLine}>―</Text><Text style={s.progressOff}>3</Text><Text style={s.progressLine}>―</Text><Text style={s.progressOff}>4</Text>
+          <Text style={s.progressActive}>1</Text>
+          <Text style={s.progressLine}>―</Text>
+          <Text style={s.progressOff}>2</Text>
+          <Text style={s.progressLine}>―</Text>
+          <Text style={s.progressOff}>3</Text>
+          <Text style={s.progressLine}>―</Text>
+          <Text style={s.progressOff}>4</Text>
         </View>
-        <Text style={s.securing}>◯ 선택하신 운임과 좌석 등급을 확보하는 중입니다…</Text>
+        <Text style={s.securing}>
+          ◯ 선택하신 운임과 좌석 등급을 확보하는 중입니다…
+        </Text>
         <View style={s.itineraryBox}>
-          <Text style={s.reviewTitle}>{from} ⇄ {to}</Text>
-          <Text style={s.itineraryText}>가는날: {dayText(departDay)}　{out.time}~{out.arrival}</Text>
-          <Text style={s.itineraryText}>오는날: {dayText(returnDay)}　{incoming.time}~{incoming.arrival}</Text>
+          <Text style={s.reviewTitle}>
+            {from} ⇄ {to}
+          </Text>
+          <Text style={s.itineraryText}>
+            가는날: {dayText(departDay)}　{out.time}~{out.arrival}
+          </Text>
+          <Text style={s.itineraryText}>
+            오는날: {dayText(returnDay)}　{incoming.time}~{incoming.arrival}
+          </Text>
           <Text style={s.ruleText}>수하물 및 규정　›</Text>
         </View>
-        <View style={s.flexBox}><Text style={s.flexText}>🛡 트립플렉스 · 간편 취소/변경 연습</Text><Text>›</Text></View>
+        <View style={s.flexBox}>
+          <Text style={s.flexText}>🛡 트립플렉스 · 간편 취소/변경 연습</Text>
+          <Text>›</Text>
+        </View>
         <View style={s.passengerForm}>
           <Text style={s.formTitle}>탑승객 정보</Text>
-          <Text style={s.formGuide}>• 신분증 또는 여권에 기재된 정보와 동일하게 입력해 주세요.</Text>
-          <Pressable style={s.formInput} onPress={() => setCountryOpen(true)}><Text style={nationality?s.inputValue:s.inputPlaceholder}>{nationality || "국적(국가/지역)"}</Text><Text style={s.inputArrow}>›</Text></Pressable>
-          <TextInput style={s.formInput} value={lastName} onChangeText={(v) => setLastName(v.replace(/[^a-zA-Z]/g, "").toUpperCase())} autoCapitalize="characters" placeholder="성 (영어)" />
-          <TextInput style={s.formInput} value={firstName} onChangeText={(v) => setFirstName(v.replace(/[^a-zA-Z]/g, "").toUpperCase())} autoCapitalize="characters" placeholder="이름 (영어)" />
-          <View style={s.genderBox}><Text style={s.genderLegend}>신분증 상 성별</Text>{(["남성","여성"] as const).map((item) => <Pressable key={item} style={s.genderChoice} onPress={() => setGender(item)}><Text style={[s.radio,gender===item&&s.radioOn]}>{gender===item?"●":"○"}</Text><Text style={s.genderText}>{item}</Text></Pressable>)}</View>
-          <TextInput style={s.formInput} value={birth} onChangeText={(v) => setBirth(v.replace(/\D/g, "").slice(0, 8))} keyboardType="number-pad" maxLength={8} placeholder="생년월일 8자리 (예: 19600101)" />
-          <View style={s.practiceNotice}><Text style={s.gray}>연습용 화면입니다. 실제 개인정보는 저장되지 않습니다.</Text></View>
+          <Text style={s.formGuide}>
+            • 신분증 또는 여권에 기재된 정보와 동일하게 입력해 주세요.
+          </Text>
+          <Pressable style={s.formInput} onPress={() => setCountryOpen(true)}>
+            <Text style={nationality ? s.inputValue : s.inputPlaceholder}>
+              {nationality || "국적(국가/지역)"}
+            </Text>
+            <Text style={s.inputArrow}>›</Text>
+          </Pressable>
+          <TextInput
+            style={s.formInput}
+            value={lastName}
+            onChangeText={(v) =>
+              setLastName(v.replace(/[^a-zA-Z]/g, "").toUpperCase())
+            }
+            autoCapitalize="characters"
+            placeholder="성 (영어)"
+          />
+          <TextInput
+            style={s.formInput}
+            value={firstName}
+            onChangeText={(v) =>
+              setFirstName(v.replace(/[^a-zA-Z]/g, "").toUpperCase())
+            }
+            autoCapitalize="characters"
+            placeholder="이름 (영어)"
+          />
+          <View style={s.genderBox}>
+            <Text style={s.genderLegend}>신분증 상 성별</Text>
+            {(["남성", "여성"] as const).map((item) => (
+              <Pressable
+                key={item}
+                style={s.genderChoice}
+                onPress={() => setGender(item)}
+              >
+                <Text style={[s.radio, gender === item && s.radioOn]}>
+                  {gender === item ? "●" : "○"}
+                </Text>
+                <Text style={s.genderText}>{item}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <TextInput
+            style={s.formInput}
+            value={birth}
+            onChangeText={(v) => setBirth(v.replace(/\D/g, "").slice(0, 8))}
+            keyboardType="number-pad"
+            maxLength={8}
+            placeholder="생년월일 8자리 (예: 19600101)"
+          />
+          <View style={s.practiceNotice}>
+            <Text style={s.gray}>
+              연습용 화면입니다. 실제 개인정보는 저장되지 않습니다.
+            </Text>
+          </View>
         </View>
       </ScrollView>
-      <View style={s.infoBottom}><View><Text style={s.gray}>총 결제 예정 금액</Text><Text style={s.price}>{total.toLocaleString()}원</Text></View><Pressable style={[s.continueButton,!ready&&{opacity:.45}]} onPress={continueBooking}><Text style={s.buttonText}>계속</Text></Pressable></View>
-      <Modal visible={countryOpen} transparent animationType="slide"><View style={s.countryDim}><View style={s.countrySheet}><Text style={s.formTitle}>국적 선택</Text>{["대한민국","일본","미국","중국","태국","베트남","싱가포르"].map((country) => <Pressable key={country} style={s.countryRow} onPress={() => {setNationality(country);setCountryOpen(false)}}><Text style={s.countryText}>{country}</Text><Text>›</Text></Pressable>)}<Pressable style={s.retry} onPress={() => setCountryOpen(false)}><Text style={s.gray}>닫기</Text></Pressable></View></View></Modal>
+      <View style={s.infoBottom}>
+        <View>
+          <Text style={s.gray}>총 결제 예정 금액</Text>
+          <Text style={s.price}>{total.toLocaleString()}원</Text>
+        </View>
+        <Pressable
+          style={[s.continueButton, !ready && { opacity: 0.45 }]}
+          onPress={continueBooking}
+        >
+          <Text style={s.buttonText}>계속</Text>
+        </Pressable>
+      </View>
+      <Modal visible={countryOpen} transparent animationType="slide">
+        <View style={s.countryDim}>
+          <View style={s.countrySheet}>
+            <Text style={s.formTitle}>국적 선택</Text>
+            {[
+              "대한민국",
+              "일본",
+              "미국",
+              "중국",
+              "태국",
+              "베트남",
+              "싱가포르",
+            ].map((country) => (
+              <Pressable
+                key={country}
+                style={s.countryRow}
+                onPress={() => {
+                  setNationality(country);
+                  setCountryOpen(false);
+                }}
+              >
+                <Text style={s.countryText}>{country}</Text>
+                <Text>›</Text>
+              </Pressable>
+            ))}
+            <Pressable style={s.retry} onPress={() => setCountryOpen(false)}>
+              <Text style={s.gray}>닫기</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1121,12 +1265,27 @@ function Booked({
   );
 }
 const airportCodes: Record<string, string> = {
-  서울: "ICN", 부산: "PUS", 제주: "CJU", 대구: "TAE", 광주: "KWJ",
-  오사카: "KIX", 도쿄: "NRT", 후쿠오카: "FUK", 삿포로: "CTS", 오키나와: "OKA",
-  베이징: "PEK", 상하이: "PVG", 홍콩: "HKG", 타이베이: "TPE", 방콕: "BKK",
-  다낭: "DAD", 싱가포르: "SIN", 괌: "GUM",
+  서울: "ICN",
+  부산: "PUS",
+  제주: "CJU",
+  대구: "TAE",
+  광주: "KWJ",
+  오사카: "KIX",
+  도쿄: "NRT",
+  후쿠오카: "FUK",
+  삿포로: "CTS",
+  오키나와: "OKA",
+  베이징: "PEK",
+  상하이: "PVG",
+  홍콩: "HKG",
+  타이베이: "TPE",
+  방콕: "BKK",
+  다낭: "DAD",
+  싱가포르: "SIN",
+  괌: "GUM",
 };
-const cityName = (value?: string) => value?.replace(/\s*\([A-Z]{3}\)$/, "") || "";
+const cityName = (value?: string) =>
+  value?.replace(/\s*\([A-Z]{3}\)$/, "") || "";
 const locationLabel = (city: string) =>
   airportCodes[city] ? `${city} (${airportCodes[city]})` : city;
 const airportCodeFor = (value: string) =>
@@ -1149,41 +1308,99 @@ function BoardingPass({
   onBack: () => void;
 }) {
   const qrPattern = Array.from({ length: 81 }, (_, i) =>
-    [0,1,2,9,11,18,19,20,4,6,12,15,22,24,27,29,31,33,35,37,40,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79,80].includes(i),
+    [
+      0, 1, 2, 9, 11, 18, 19, 20, 4, 6, 12, 15, 22, 24, 27, 29, 31, 33, 35, 37,
+      40, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73,
+      75, 77, 79, 80,
+    ].includes(i),
   );
   return (
     <View style={[s.page, s.boardingBg]}>
       <Header title="모바일 탑승권" onBack={onBack} />
       <ScrollView contentContainerStyle={s.boardingPad}>
         <Text style={s.boardingHero}>탑승권이 발급되었어요</Text>
-        <Text style={s.boardingSub}>공항에서는 탑승권과 신분증을 함께 준비해 주세요.</Text>
+        <Text style={s.boardingSub}>
+          공항에서는 탑승권과 신분증을 함께 준비해 주세요.
+        </Text>
         <View style={s.boardingCard}>
-          <View style={s.boardingBrand}><Text style={s.boardingBrandText}>SMART AIR</Text><Text style={s.boardingType}>BOARDING PASS</Text></View>
+          <View style={s.boardingBrand}>
+            <Text style={s.boardingBrandText}>SMART AIR</Text>
+            <Text style={s.boardingType}>BOARDING PASS</Text>
+          </View>
           <View style={s.boardingRoute}>
-            <View style={s.codeBlock}><Text style={s.airportBig}>{airportCodeFor(from) || "DEP"}</Text><Text style={s.citySmall}>{cityName(from)}</Text></View>
-            <View style={s.routePlane}><Text style={s.routeLine}>━━━━ ✈</Text><Text style={s.directText}>직항</Text></View>
-            <View style={[s.codeBlock,{alignItems:"flex-end"}]}><Text style={s.airportBig}>{airportCodeFor(to) || "ARR"}</Text><Text style={s.citySmall}>{cityName(to)}</Text></View>
+            <View style={s.codeBlock}>
+              <Text style={s.airportBig}>{airportCodeFor(from) || "DEP"}</Text>
+              <Text style={s.citySmall}>{cityName(from)}</Text>
+            </View>
+            <View style={s.routePlane}>
+              <Text style={s.routeLine}>━━━━ ✈</Text>
+              <Text style={s.directText}>직항</Text>
+            </View>
+            <View style={[s.codeBlock, { alignItems: "flex-end" }]}>
+              <Text style={s.airportBig}>{airportCodeFor(to) || "ARR"}</Text>
+              <Text style={s.citySmall}>{cityName(to)}</Text>
+            </View>
           </View>
-          <View style={s.ticketDivider}><View style={s.ticketNotchLeft}/><Text style={s.dashLine}>- - - - - - - - - - - - - - - -</Text><View style={s.ticketNotchRight}/></View>
+          <View style={s.ticketDivider}>
+            <View style={s.ticketNotchLeft} />
+            <Text style={s.dashLine}>- - - - - - - - - - - - - - - -</Text>
+            <View style={s.ticketNotchRight} />
+          </View>
           <View style={s.boardingDetails}>
-            <TicketField label="탑승객" value={passenger || "PASSENGER"}/>
-            <TicketField label="항공편" value="SK 0908"/>
-            <TicketField label="탑승일" value={dayText(departDay)}/>
-            <TicketField label="출발시간" value={flight.time}/>
-            <TicketField label="게이트" value="A12"/>
-            <TicketField label="좌석" value="18A" highlight/>
+            <TicketField label="탑승객" value={passenger || "PASSENGER"} />
+            <TicketField label="항공편" value="SK 0908" />
+            <TicketField label="탑승일" value={dayText(departDay)} />
+            <TicketField label="출발시간" value={flight.time} />
+            <TicketField label="게이트" value="A12" />
+            <TicketField label="좌석" value="18A" highlight />
           </View>
-          <View style={s.qrArea}><View style={s.qrBox}>{qrPattern.map((on,i)=><View key={i} style={[s.qrCell,on&&s.qrCellOn]}/>)}</View><View style={{flex:1}}><Text style={s.scanTitle}>탑승 시 QR을 보여주세요</Text><Text style={s.boardingNumber}>교육용 탑승권 · BP-0908-18A</Text></View></View>
-          <View style={s.fakeBanner}><Text style={s.fakeBannerText}>연습용 탑승권입니다 · 실제 탑승에는 사용할 수 없습니다</Text></View>
+          <View style={s.qrArea}>
+            <View style={s.qrBox}>
+              {qrPattern.map((on, i) => (
+                <View key={i} style={[s.qrCell, on && s.qrCellOn]} />
+              ))}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.scanTitle}>탑승 시 QR을 보여주세요</Text>
+              <Text style={s.boardingNumber}>교육용 탑승권 · BP-0908-18A</Text>
+            </View>
+          </View>
+          <View style={s.fakeBanner}>
+            <Text style={s.fakeBannerText}>
+              연습용 탑승권입니다 · 실제 탑승에는 사용할 수 없습니다
+            </Text>
+          </View>
         </View>
-        <View style={s.boardingTip}><Text style={s.formTitle}>탑승 전 확인</Text><Text style={s.tipText}>✓ 출발 2시간 전 공항 도착</Text><Text style={s.tipText}>✓ 탑승권과 신분증 준비</Text><Text style={s.tipText}>✓ 탑승구와 탑승 시간 다시 확인</Text></View>
-        <Pressable style={s.blueButton} onPress={onDone}><Text style={s.buttonText}>탑승권 확인 완료</Text></Pressable>
+        <View style={s.boardingTip}>
+          <Text style={s.formTitle}>탑승 전 확인</Text>
+          <Text style={s.tipText}>✓ 출발 2시간 전 공항 도착</Text>
+          <Text style={s.tipText}>✓ 탑승권과 신분증 준비</Text>
+          <Text style={s.tipText}>✓ 탑승구와 탑승 시간 다시 확인</Text>
+        </View>
+        <Pressable style={s.blueButton} onPress={onDone}>
+          <Text style={s.buttonText}>탑승권 확인 완료</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
 }
-function TicketField({label,value,highlight=false}:{label:string;value:string;highlight?:boolean}) {
-  return <View style={s.ticketField}><Text style={s.ticketFieldLabel}>{label}</Text><Text style={[s.ticketFieldValue,highlight&&s.ticketHighlight]}>{value}</Text></View>;
+function TicketField({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <View style={s.ticketField}>
+      <Text style={s.ticketFieldLabel}>{label}</Text>
+      <Text style={[s.ticketFieldValue, highlight && s.ticketHighlight]}>
+        {value}
+      </Text>
+    </View>
+  );
 }
 function Finished({
   onBack,
@@ -1686,45 +1903,192 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   passengerFormPad: { padding: 18, paddingBottom: 130 },
-  progressRow: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 5 },
-  progressActive: { width: 25, height: 25, borderRadius: 13, backgroundColor: "#172033", color: "white", textAlign: "center", textAlignVertical: "center", fontWeight: "900" },
-  progressOff: { width: 25, height: 25, borderRadius: 13, backgroundColor: "#9aa0aa", color: "white", textAlign: "center", textAlignVertical: "center", fontWeight: "900" },
+  progressRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 5,
+  },
+  progressActive: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    backgroundColor: "#172033",
+    color: "white",
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "900",
+  },
+  progressOff: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    backgroundColor: "#9aa0aa",
+    color: "white",
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "900",
+  },
   progressLine: { color: "#9aa0aa" },
-  securing: { color: "#008d9b", fontSize: 17, fontWeight: "800", marginVertical: 14 },
-  itineraryBox: { backgroundColor: "white", borderRadius: 15, padding: 20, gap: 12 },
+  securing: {
+    color: "#008d9b",
+    fontSize: 17,
+    fontWeight: "800",
+    marginVertical: 14,
+  },
+  itineraryBox: {
+    backgroundColor: "white",
+    borderRadius: 15,
+    padding: 20,
+    gap: 12,
+  },
   itineraryText: { fontSize: 17, fontWeight: "700" },
-  ruleText: { borderTopWidth: 1, borderColor: "#e1e4e8", paddingTop: 17, fontSize: 17, color: "#555" },
-  flexBox: { backgroundColor: "white", borderRadius: 15, padding: 20, marginVertical: 14, flexDirection: "row", justifyContent: "space-between" },
+  ruleText: {
+    borderTopWidth: 1,
+    borderColor: "#e1e4e8",
+    paddingTop: 17,
+    fontSize: 17,
+    color: "#555",
+  },
+  flexBox: {
+    backgroundColor: "white",
+    borderRadius: 15,
+    padding: 20,
+    marginVertical: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
   flexText: { color: "#555", fontSize: 16, fontWeight: "700" },
-  passengerForm: { backgroundColor: "white", borderRadius: 15, padding: 20, gap: 14 },
+  passengerForm: {
+    backgroundColor: "white",
+    borderRadius: 15,
+    padding: 20,
+    gap: 14,
+  },
   formTitle: { fontSize: 24, fontWeight: "900" },
   formGuide: { color: "#626b7b", lineHeight: 23 },
-  formInput: { minHeight: 64, borderWidth: 1, borderColor: "#c8cdd7", borderRadius: 6, paddingHorizontal: 16, fontSize: 18, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "white" },
+  formInput: {
+    minHeight: 64,
+    borderWidth: 1,
+    borderColor: "#c8cdd7",
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    fontSize: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "white",
+  },
   inputPlaceholder: { color: "#858d9c", fontSize: 18 },
   inputValue: { color: "#172033", fontSize: 18, fontWeight: "800" },
   inputArrow: { fontSize: 32, color: "#596273" },
-  genderBox: { minHeight: 76, borderWidth: 1, borderColor: "#c8cdd7", borderRadius: 6, paddingHorizontal: 16, paddingTop: 16, flexDirection: "row", alignItems: "center" },
-  genderLegend: { position: "absolute", top: -11, left: 14, paddingHorizontal: 5, backgroundColor: "white", color: "#707887" },
+  genderBox: {
+    minHeight: 76,
+    borderWidth: 1,
+    borderColor: "#c8cdd7",
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  genderLegend: {
+    position: "absolute",
+    top: -11,
+    left: 14,
+    paddingHorizontal: 5,
+    backgroundColor: "white",
+    color: "#707887",
+  },
   genderChoice: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   radio: { fontSize: 31, color: "#858d9c" },
   radioOn: { color: BLUE },
   genderText: { fontSize: 18, fontWeight: "700" },
   practiceNotice: { backgroundColor: "#eef3ff", padding: 14, borderRadius: 7 },
-  infoBottom: { position: "absolute", bottom: 0, left: 0, right: 0, minHeight: 105, backgroundColor: "white", padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderColor: "#e5e7eb" },
-  continueButton: { width: 180, height: 65, backgroundColor: BLUE, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  countryDim: { flex: 1, backgroundColor: "rgba(0,0,0,.5)", justifyContent: "flex-end" },
-  countrySheet: { backgroundColor: "white", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "78%" },
-  countryRow: { minHeight: 58, borderBottomWidth: 1, borderColor: "#eee", flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  infoBottom: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    minHeight: 105,
+    backgroundColor: "white",
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  continueButton: {
+    width: 180,
+    height: 65,
+    backgroundColor: BLUE,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countryDim: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,.5)",
+    justifyContent: "flex-end",
+  },
+  countrySheet: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: "78%",
+  },
+  countryRow: {
+    minHeight: 58,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   countryText: { fontSize: 18, fontWeight: "700" },
   boardingBg: { backgroundColor: "#edf2fa" },
   boardingPad: { padding: 20, paddingBottom: 80 },
-  boardingHero: { fontSize: 28, fontWeight: "900", textAlign: "center", marginTop: 10 },
-  boardingSub: { color: "#697386", textAlign: "center", marginTop: 8, marginBottom: 22 },
-  boardingCard: { backgroundColor: "white", borderRadius: 22, overflow: "hidden", elevation: 5 },
-  boardingBrand: { backgroundColor: "#172b65", paddingHorizontal: 22, height: 72, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  boardingHero: {
+    fontSize: 28,
+    fontWeight: "900",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  boardingSub: {
+    color: "#697386",
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 22,
+  },
+  boardingCard: {
+    backgroundColor: "white",
+    borderRadius: 22,
+    overflow: "hidden",
+    elevation: 5,
+  },
+  boardingBrand: {
+    backgroundColor: "#172b65",
+    paddingHorizontal: 22,
+    height: 72,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   boardingBrandText: { color: "white", fontSize: 24, fontWeight: "900" },
-  boardingType: { color: "#cbd7ff", fontSize: 13, fontWeight: "800", letterSpacing: 1 },
-  boardingRoute: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 24 },
+  boardingType: {
+    color: "#cbd7ff",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  boardingRoute: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 24,
+  },
   codeBlock: { flex: 1 },
   airportBig: { fontSize: 38, fontWeight: "900", color: "#172033" },
   citySmall: { color: "#697386", fontSize: 16, marginTop: 2 },
@@ -1733,22 +2097,68 @@ const s = StyleSheet.create({
   directText: { color: "#697386", fontSize: 12, marginTop: 4 },
   ticketDivider: { height: 28, justifyContent: "center", overflow: "hidden" },
   dashLine: { color: "#c9cfda", textAlign: "center" },
-  ticketNotchLeft: { position: "absolute", left: -14, width: 28, height: 28, borderRadius: 14, backgroundColor: "#edf2fa" },
-  ticketNotchRight: { position: "absolute", right: -14, width: 28, height: 28, borderRadius: 14, backgroundColor: "#edf2fa" },
-  boardingDetails: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 22, paddingBottom: 12 },
+  ticketNotchLeft: {
+    position: "absolute",
+    left: -14,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#edf2fa",
+  },
+  ticketNotchRight: {
+    position: "absolute",
+    right: -14,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#edf2fa",
+  },
+  boardingDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 22,
+    paddingBottom: 12,
+  },
   ticketField: { width: "33.33%", paddingVertical: 10 },
   ticketFieldLabel: { color: "#7b8495", fontSize: 13 },
-  ticketFieldValue: { color: "#172033", fontSize: 17, fontWeight: "800", marginTop: 5 },
+  ticketFieldValue: {
+    color: "#172033",
+    fontSize: 17,
+    fontWeight: "800",
+    marginTop: 5,
+  },
   ticketHighlight: { color: BLUE, fontSize: 25 },
-  qrArea: { borderTopWidth: 1, borderColor: "#e5e8ee", marginHorizontal: 22, paddingVertical: 20, flexDirection: "row", alignItems: "center", gap: 18 },
-  qrBox: { width: 99, height: 99, flexDirection: "row", flexWrap: "wrap", padding: 5, borderWidth: 1, borderColor: "#172033" },
+  qrArea: {
+    borderTopWidth: 1,
+    borderColor: "#e5e8ee",
+    marginHorizontal: 22,
+    paddingVertical: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 18,
+  },
+  qrBox: {
+    width: 99,
+    height: 99,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    padding: 5,
+    borderWidth: 1,
+    borderColor: "#172033",
+  },
   qrCell: { width: 9.7, height: 9.7, backgroundColor: "white" },
   qrCellOn: { backgroundColor: "#172033" },
   scanTitle: { fontSize: 17, fontWeight: "900" },
   boardingNumber: { color: "#7b8495", fontSize: 12, marginTop: 8 },
   fakeBanner: { backgroundColor: "#fff4d7", padding: 14 },
   fakeBannerText: { color: "#9b6500", fontWeight: "800", textAlign: "center" },
-  boardingTip: { backgroundColor: "white", borderRadius: 16, padding: 20, marginVertical: 18, gap: 10 },
+  boardingTip: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    marginVertical: 18,
+    gap: 10,
+  },
   tipText: { color: "#4c5668", fontSize: 16 },
   center: { padding: 30, alignItems: "center", justifyContent: "center" },
   completeCircle: {
