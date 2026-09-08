@@ -140,6 +140,8 @@ export function FlightPracticeScreen({
   };
   const previous = () => {
     if (step === 0) return onBack();
+    setEditor(null);
+    setWrong("");
     setStep((v) => Math.max(0, v - 1));
     setMission(true);
   };
@@ -167,7 +169,7 @@ export function FlightPracticeScreen({
   const total = ((out?.price || 0) + (incoming?.price || 0)) * people;
   const dates =
     departDay && returnDay
-      ? `9월 ${departDay}일 - 9월 ${returnDay}일`
+      ? `${dayText(departDay, false)} - ${dayText(returnDay, false)}`
       : "날짜 선택";
   return (
     <SafeAreaView style={s.safe}>
@@ -198,7 +200,7 @@ export function FlightPracticeScreen({
             selected={from}
             onPick={(city) => {
               setFrom(city);
-              if (city === to) setTo("");
+              if (cityName(city) === cityName(to)) setTo("");
               setEditor(null);
               if (step === 1) next();
             }}
@@ -211,7 +213,7 @@ export function FlightPracticeScreen({
             selected={to}
             blocked={from}
             onPick={(city) => {
-              if (city === from) {
+              if (cityName(city) === cityName(from)) {
                 remind("출발지와 다른 도시를 선택해 주세요.");
                 return;
               }
@@ -482,13 +484,16 @@ function CityPicker({
     <View style={s.page}>
       <Header title={title} onBack={onBack} />
       <View style={s.citySearch}>
-        <Text style={{ fontSize: 22 }}>⌕</Text>
+        <Text style={s.citySearchIcon} accessibilityElementsHidden>
+🔍
+        </Text>
         <TextInput
           value={query}
           onChangeText={setQuery}
           autoFocus
           placeholder="국가, 도시, 공항 검색"
-          style={{ flex: 1, fontSize: 18 }}
+          placeholderTextColor="#8a8f9b"
+          style={s.citySearchInput}
         />
       </View>
       <ScrollView contentContainerStyle={s.cityPad}>
@@ -504,16 +509,16 @@ function CityPicker({
               {shownCities.map((c) => (
                 <Pressable
                   key={c}
-                  onPress={() => onPick(c)}
+                  onPress={() => onPick(locationLabel(c))}
                   style={[
                     s.city,
-                    c === selected && s.cityTarget,
-                    c === blocked && s.cityBlocked,
+                    cityName(selected) === c && s.cityTarget,
+                    cityName(blocked) === c && s.cityBlocked,
                   ]}
                 >
-                  <Text style={c === selected ? s.blueText : undefined}>
-                    {c}
-                    {c === blocked ? " · 출발지" : ""}
+                  <Text style={cityName(selected) === c ? s.blueText : undefined}>
+                    {locationLabel(c)}
+                    {cityName(blocked) === c ? " · 출발지" : ""}
                   </Text>
                 </Pressable>
               ))}
@@ -526,15 +531,15 @@ function CityPicker({
             {shownAirports.map((a) => (
               <Pressable
                 key={a.code}
-                onPress={() => onPick(a.city)}
-                style={[s.airport, a.city === blocked && s.cityBlocked]}
+                onPress={() => onPick(`${a.city} (${a.code})`)}
+                style={[s.airport, cityName(blocked) === a.city && s.cityBlocked]}
               >
                 <Text style={s.airportTitle}>
                   ✈ {a.code} {a.name}
                 </Text>
                 <Text style={s.gray}>
-                  {a.city}
-                  {a.city === blocked ? " · 출발지" : ""}
+                  {a.city} ({a.code})
+                  {cityName(blocked) === a.city ? " · 출발지" : ""}
                 </Text>
               </Pressable>
             ))}
@@ -550,10 +555,26 @@ function CityPicker({
   );
 }
 
-const dayText = (day: number | null) =>
-  day
-    ? `9월 ${day}일(${["일", "월", "화", "수", "목", "금", "토"][(day + 1) % 7]})`
-    : "날짜 선택";
+const dateKey = (year: number, month: number, day: number) =>
+  year * 10000 + month * 100 + day;
+const dateParts = (value: number) => ({
+  year: Math.floor(value / 10000),
+  month: Math.floor((value % 10000) / 100),
+  day: value % 100,
+});
+const dayText = (value: number | null, weekday = true) => {
+  if (!value) return "날짜 선택";
+  const { year, month, day } = dateParts(value);
+  const week = ["일", "월", "화", "수", "목", "금", "토"][
+    new Date(year, month - 1, day).getDay()
+  ];
+  return `${year}년 ${month}월 ${day}일${weekday ? `(${week})` : ""}`;
+};
+const shiftDate = (value: number, amount: number) => {
+  const { year, month, day } = dateParts(value);
+  const shifted = new Date(year, month - 1, day + amount);
+  return dateKey(shifted.getFullYear(), shifted.getMonth() + 1, shifted.getDate());
+};
 function Calendar({
   departDay,
   returnDay,
@@ -571,13 +592,24 @@ function Calendar({
   onBack: () => void;
   onWrong: (text: string) => void;
 }) {
+  const initial = departDay ? dateParts(departDay) : { year: 2026, month: 9, day: 1 };
+  const [viewYear, setViewYear] = useState(initial.year);
+  const [viewMonth, setViewMonth] = useState(initial.month);
+  const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+  const firstWeekday = new Date(viewYear, viewMonth - 1, 1).getDay();
   const selectDay = (day: number) => {
-    if (!departDay || returnDay || day <= departDay) {
-      setDepartDay(day);
+    const picked = dateKey(viewYear, viewMonth, day);
+    if (!departDay || returnDay || picked <= departDay) {
+      setDepartDay(picked);
       setReturnDay(null);
       return;
     }
-    setReturnDay(day);
+    setReturnDay(picked);
+  };
+  const changeMonth = (amount: number) => {
+    const next = new Date(viewYear, viewMonth - 1 + amount, 1);
+    setViewYear(next.getFullYear());
+    setViewMonth(next.getMonth() + 1);
   };
   const ready = Boolean(departDay && returnDay);
   return (
@@ -591,7 +623,11 @@ function Calendar({
         ))}
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 180 }}>
-        <Text style={s.month}>2026년 9월</Text>
+        <View style={s.monthNav}>
+          <Pressable onPress={() => changeMonth(-1)} style={s.monthArrow}><Text style={s.monthArrowText}>‹</Text></Pressable>
+          <Text style={s.month}>{viewYear}년 {viewMonth}월</Text>
+          <Pressable onPress={() => changeMonth(1)} style={s.monthArrow}><Text style={s.monthArrowText}>›</Text></Pressable>
+        </View>
         <Text style={[s.gray, { textAlign: "center", marginBottom: 12 }]}>
           {returnDay
             ? "날짜 선택이 완료됐어요."
@@ -600,10 +636,12 @@ function Calendar({
               : "먼저 가는 날을 선택해 주세요."}
         </Text>
         <View style={s.days}>
-          {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => {
-            const edge = d === departDay || d === returnDay;
+          {Array.from({ length: firstWeekday }, (_, i) => <View key={`blank-${i}`} style={s.day} />)}
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => {
+            const value = dateKey(viewYear, viewMonth, d);
+            const edge = value === departDay || value === returnDay;
             const between = Boolean(
-              departDay && returnDay && d > departDay && d < returnDay,
+              departDay && returnDay && value > departDay && value < returnDay,
             );
             return (
               <Pressable
@@ -613,21 +651,23 @@ function Calendar({
               >
                 <Text
                   style={
-                    edge ? s.whiteText : (d + 1) % 7 === 0 ? s.red : undefined
+                    edge
+                      ? s.whiteText
+                      : new Date(viewYear, viewMonth - 1, d).getDay() === 0
+                        ? s.red
+                        : undefined
                   }
                 >
                   {d}
                 </Text>
-                {d === returnDay && <Text style={s.dayPrice}>선택</Text>}
+                {value === returnDay && <Text style={s.dayPrice}>선택</Text>}
               </Pressable>
             );
           })}
         </View>
-        <View style={s.holidays}>
-          <Text>• 9월 24일 추석 연휴</Text>
-          <Text>• 9월 25일 추석</Text>
-          <Text>• 9월 26일 추석 연휴</Text>
-        </View>
+        {viewYear === 2026 && viewMonth === 9 && <View style={s.holidays}>
+          <Text>• 9월 24일 추석 연휴</Text><Text>• 9월 25일 추석</Text><Text>• 9월 26일 추석 연휴</Text>
+        </View>}
       </ScrollView>
       <View style={s.calendarBottom}>
         <View style={s.rowBetween}>
@@ -839,14 +879,14 @@ function FlightList({
       </View>
       <View style={s.dateStrip}>
         <Text>
-          9월 {Math.max(1, travelDay - 1)}일{`\n`}195,400원
+          {dayText(shiftDate(travelDay, -1), false)}{`\n`}195,400원
         </Text>
         <Text style={s.dateOn}>
           {dayText(travelDay)}
           {`\n`}155,000원
         </Text>
         <Text>
-          9월 {Math.min(30, travelDay + 1)}일{`\n`}160,600원
+          {dayText(shiftDate(travelDay, 1), false)}{`\n`}160,600원
         </Text>
       </View>
       <View style={s.sort}>
@@ -1086,6 +1126,11 @@ const airportCodes: Record<string, string> = {
   베이징: "PEK", 상하이: "PVG", 홍콩: "HKG", 타이베이: "TPE", 방콕: "BKK",
   다낭: "DAD", 싱가포르: "SIN", 괌: "GUM",
 };
+const cityName = (value?: string) => value?.replace(/\s*\([A-Z]{3}\)$/, "") || "";
+const locationLabel = (city: string) =>
+  airportCodes[city] ? `${city} (${airportCodes[city]})` : city;
+const airportCodeFor = (value: string) =>
+  value.match(/\(([A-Z]{3})\)$/)?.[1] || airportCodes[cityName(value)] || "";
 function BoardingPass({
   from,
   to,
@@ -1115,9 +1160,9 @@ function BoardingPass({
         <View style={s.boardingCard}>
           <View style={s.boardingBrand}><Text style={s.boardingBrandText}>SMART AIR</Text><Text style={s.boardingType}>BOARDING PASS</Text></View>
           <View style={s.boardingRoute}>
-            <View style={s.codeBlock}><Text style={s.airportBig}>{airportCodes[from] || "DEP"}</Text><Text style={s.citySmall}>{from}</Text></View>
+            <View style={s.codeBlock}><Text style={s.airportBig}>{airportCodeFor(from) || "DEP"}</Text><Text style={s.citySmall}>{cityName(from)}</Text></View>
             <View style={s.routePlane}><Text style={s.routeLine}>━━━━ ✈</Text><Text style={s.directText}>직항</Text></View>
-            <View style={[s.codeBlock,{alignItems:"flex-end"}]}><Text style={s.airportBig}>{airportCodes[to] || "ARR"}</Text><Text style={s.citySmall}>{to}</Text></View>
+            <View style={[s.codeBlock,{alignItems:"flex-end"}]}><Text style={s.airportBig}>{airportCodeFor(to) || "ARR"}</Text><Text style={s.citySmall}>{cityName(to)}</Text></View>
           </View>
           <View style={s.ticketDivider}><View style={s.ticketNotchLeft}/><Text style={s.dashLine}>- - - - - - - - - - - - - - - -</Text><View style={s.ticketNotchRight}/></View>
           <View style={s.boardingDetails}>
@@ -1365,8 +1410,18 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#bbb",
     borderRadius: 7,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     paddingHorizontal: 20,
+  },
+  citySearchIcon: { fontSize: 21 },
+  citySearchInput: {
+    flex: 1,
+    height: "100%",
+    paddingVertical: 0,
+    fontSize: 18,
+    color: "#111827",
   },
   cityPad: { padding: 20, paddingBottom: 80 },
   chooseHint: { color: "#777", marginTop: -10, marginBottom: 14 },
@@ -1395,8 +1450,23 @@ const s = StyleSheet.create({
     fontSize: 24,
     fontWeight: "900",
     textAlign: "center",
-    marginVertical: 22,
   },
+  monthNav: {
+    marginVertical: 18,
+    paddingHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  monthArrow: {
+    width: 52,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#f2f4f8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  monthArrowText: { fontSize: 34, fontWeight: "700", color: "#27324a" },
   days: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 22 },
   day: {
     width: "14.285%",
