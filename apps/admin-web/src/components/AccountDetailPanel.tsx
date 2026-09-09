@@ -79,6 +79,8 @@ export function AccountDetailPanel({ account, onBack }: { account: KioskAccount;
       <div>
         <button className="mb-3 font-bold text-slate-500 hover:text-slate-900" onClick={onBack} type="button">← 회원 계정 목록</button>
         <h3 className="text-2xl font-black">{account.username} 계정 통계</h3>
+        <p className="mt-2 font-bold text-slate-700">{account.nickname || "별명 없음"} · {account.organization_name || "기관명 없음"}</p>
+        <p className="mt-1 text-sm text-slate-500">담당자 {account.manager_phone || "-"}</p>
         <p className="mt-1 text-sm text-slate-500">만료일 {new Date(account.expires_at).toLocaleDateString("ko-KR")} · {account.is_active ? "사용 중" : "사용 중지"}</p>
       </div>
       <button className="w-full rounded-xl bg-emerald-700 px-6 py-4 text-lg font-black text-white shadow-sm hover:bg-emerald-800 disabled:opacity-50 sm:w-auto" disabled={loading || exporting} onClick={() => void exportExcel()} type="button">

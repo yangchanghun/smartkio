@@ -15,9 +15,17 @@ class OrderSerializer(serializers.ModelSerializer):
 class KioskAccountSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", max_length=150)
     password = serializers.CharField(write_only=True, required=False, min_length=4)
+    nickname = serializers.CharField(max_length=50, required=True, allow_blank=False)
+    organization_name = serializers.CharField(max_length=120, required=True, allow_blank=False)
+    manager_phone = serializers.RegexField(
+        regex=r"^[0-9+()\-\s]{7,20}$",
+        required=True,
+        allow_blank=False,
+        error_messages={"invalid": "담당자 전화번호를 확인해 주세요."},
+    )
     class Meta:
         model = KioskAccount
-        fields = ["id", "user", "username", "password", "expires_at", "is_active", "last_login_at"]
+        fields = ["id", "user", "username", "password", "nickname", "organization_name", "manager_phone", "expires_at", "is_active", "last_login_at"]
         read_only_fields = ["user", "last_login_at"]
 
     def validate_username(self, value):

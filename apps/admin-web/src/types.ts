@@ -14,6 +14,9 @@ export type PracticeSession = {
 export type KioskAccount = {
   id: number;
   username: string;
+  nickname: string;
+  organization_name: string;
+  manager_phone: string;
   expires_at: string;
   is_active: boolean;
   last_login_at: string | null;

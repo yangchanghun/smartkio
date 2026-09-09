@@ -17,7 +17,14 @@ export function AccountsPanel() {
     void load();
   }, [load]);
   const rows = useMemo(
-    () => accounts.filter((a) => a.username.includes(q)),
+    () => {
+      const keyword = q.trim().toLocaleLowerCase("ko-KR");
+      if (!keyword) return accounts;
+      return accounts.filter((account) =>
+        [account.username, account.nickname, account.organization_name, account.manager_phone]
+          .some((value) => value.toLocaleLowerCase("ko-KR").includes(keyword)),
+      );
+    },
     [accounts, q],
   );
   async function save(e: FormEvent<HTMLFormElement>, a: KioskAccount) {
@@ -49,6 +56,9 @@ export function AccountsPanel() {
         body: JSON.stringify({
           username: String(data.get("username") ?? "").trim(),
           password,
+          nickname: String(data.get("nickname") ?? "").trim(),
+          organization_name: String(data.get("organization_name") ?? "").trim(),
+          manager_phone: String(data.get("manager_phone") ?? "").trim(),
           expires_at: new Date(String(data.get("expires_at"))).toISOString(),
           is_active: true,
         }),
@@ -85,6 +95,20 @@ export function AccountsPanel() {
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">
+              <span className="mb-2 block text-sm font-bold">별명</span>
+              <input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={50} name="nickname" placeholder="예: 밀양복지관 1호" required />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold">기관명</span>
+              <input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={120} name="organization_name" placeholder="예: 밀양시 노인복지관" required />
+            </label>
+          </div>
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold">담당자 전화번호</span>
+            <input autoComplete="tel" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={20} minLength={7} name="manager_phone" pattern="[0-9+()\- ]{7,20}" placeholder="예: 010-1234-5678" required type="tel" />
+          </label>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="block">
               <span className="mb-2 block text-sm font-bold">비밀번호</span>
               <input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={4} name="password" placeholder="4자 이상" required type="password" />
             </label>
@@ -112,7 +136,7 @@ export function AccountsPanel() {
           className="w-full max-w-sm rounded-xl border border-slate-200 p-3"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="아이디 검색"
+          placeholder="아이디 · 별명 · 기관명 · 담당자 전화번호 검색"
         />
         <button className="rounded-xl bg-forest px-5 py-3 font-black text-white hover:bg-emerald-900" onClick={() => { setCreating(true); setMessage(""); }} type="button">
           + 새 계정 만들기
@@ -126,6 +150,9 @@ export function AccountsPanel() {
           <thead className="bg-slate-50 text-slate-500">
             <tr>
               <th className="p-4">아이디</th>
+              <th>별명</th>
+              <th>기관명</th>
+              <th>담당자 전화번호</th>
               <th>유효기간</th>
               <th>상태</th>
               <th>마지막 로그인</th>
@@ -143,6 +170,9 @@ export function AccountsPanel() {
                     </button>
                   </div>
                 </td>
+                <td>{a.nickname || "-"}</td>
+                <td>{a.organization_name || "-"}</td>
+                <td className="whitespace-nowrap">{a.manager_phone || "-"}</td>
                 <td>{new Date(a.expires_at).toLocaleDateString("ko-KR")}</td>
                 <td
                   className={a.is_active ? "text-emerald-700" : "text-red-600"}

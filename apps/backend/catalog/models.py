@@ -28,6 +28,9 @@ class Order(models.Model):
 
 class KioskAccount(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="kiosk_account")
+    nickname = models.CharField(max_length=50, blank=True, default="", verbose_name="별명")
+    organization_name = models.CharField(max_length=120, blank=True, default="", verbose_name="기관명")
+    manager_phone = models.CharField(max_length=20, blank=True, default="", verbose_name="담당자 전화번호")
     expires_at = models.DateTimeField()
     is_active = models.BooleanField(default=True)
     last_login_at = models.DateTimeField(null=True, blank=True)

@@ -1355,11 +1355,6 @@ function BoardingPass({
             <TicketField label="좌석" value="18A" highlight />
           </View>
           <View style={s.qrArea}>
-            <View style={s.qrBox}>
-              {qrPattern.map((on, i) => (
-                <View key={i} style={[s.qrCell, on && s.qrCellOn]} />
-              ))}
-            </View>
             <View style={{ flex: 1 }}>
               <Text style={s.scanTitle}>탑승 시 QR을 보여주세요</Text>
               <Text style={s.boardingNumber}>교육용 탑승권 · BP-0908-18A</Text>

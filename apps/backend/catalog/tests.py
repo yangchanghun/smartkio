@@ -43,6 +43,9 @@ class ApiTests(TestCase):
             {
                 "username": "practice01",
                 "password": "1234",
+                "nickname": "교육실 1호",
+                "organization_name": "스마트키오 복지관",
+                "manager_phone": "010-1234-5678",
                 "expires_at": (timezone.now() + timedelta(days=30)).isoformat(),
                 "is_active": True,
             },
@@ -50,7 +53,22 @@ class ApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertTrue(User.objects.get(username="practice01").check_password("1234"))
-        self.assertTrue(KioskAccount.objects.filter(user__username="practice01").exists())
+        account = KioskAccount.objects.get(user__username="practice01")
+        self.assertEqual(account.nickname, "교육실 1호")
+        self.assertEqual(account.organization_name, "스마트키오 복지관")
+        self.assertEqual(account.manager_phone, "010-1234-5678")
+
+    def test_admin_can_search_kiosk_accounts_by_profile_fields(self):
+        account = self.user.kiosk_account
+        account.nickname = "로비 태블릿"
+        account.organization_name = "행복 복지관"
+        account.manager_phone = "010-9876-5432"
+        account.save()
+        client = self.authenticated_admin()
+        for keyword in ["로비", "행복", "9876"]:
+            response = client.get("/api/kiosk-accounts/", {"search": keyword})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual([item["id"] for item in response.data], [account.id])
 
     def authenticated_kiosk(self):
         client = APIClient()

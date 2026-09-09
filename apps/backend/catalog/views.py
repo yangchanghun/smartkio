@@ -3,6 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import permissions, status, viewsets
+from rest_framework.filters import SearchFilter
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
@@ -71,6 +72,8 @@ class KioskAccountViewSet(viewsets.ModelViewSet):
     queryset = KioskAccount.objects.select_related("user").all().order_by("user__username")
     serializer_class = KioskAccountSerializer
     permission_classes = [permissions.IsAdminUser]
+    filter_backends = [SearchFilter]
+    search_fields = ["user__username", "nickname", "organization_name", "manager_phone"]
 
 
 class PracticeSessionViewSet(viewsets.ReadOnlyModelViewSet):

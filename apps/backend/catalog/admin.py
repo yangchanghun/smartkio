@@ -7,9 +7,9 @@ admin.site.register(Order)
 
 @admin.register(KioskAccount)
 class KioskAccountAdmin(admin.ModelAdmin):
-    list_display = ("user", "expires_at", "is_active", "last_login_at")
+    list_display = ("user", "nickname", "organization_name", "manager_phone", "expires_at", "is_active", "last_login_at")
     list_filter = ("is_active",)
-    search_fields = ("user__username",)
+    search_fields = ("user__username", "nickname", "organization_name", "manager_phone")
 
 
 @admin.register(PracticeSession)
