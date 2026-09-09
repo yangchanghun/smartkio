@@ -70,6 +70,29 @@ class ApiTests(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual([item["id"] for item in response.data], [account.id])
 
+    def test_admin_can_update_kiosk_account_profile_and_password(self):
+        account = self.user.kiosk_account
+        client = self.authenticated_admin()
+        response = client.patch(
+            f"/api/kiosk-accounts/{account.id}/",
+            {
+                "username": "renamed-account",
+                "nickname": "수정된 별명",
+                "organization_name": "수정된 기관",
+                "manager_phone": "055-123-4567",
+                "password": "new-password",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        account.refresh_from_db()
+        account.user.refresh_from_db()
+        self.assertEqual(account.user.username, "renamed-account")
+        self.assertEqual(account.nickname, "수정된 별명")
+        self.assertEqual(account.organization_name, "수정된 기관")
+        self.assertEqual(account.manager_phone, "055-123-4567")
+        self.assertTrue(account.user.check_password("new-password"))
+
     def authenticated_kiosk(self):
         client = APIClient()
         token = client.post("/api/kiosk/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]

@@ -5,6 +5,7 @@ import { AccountDetailPanel } from "./AccountDetailPanel";
 export function AccountsPanel() {
   const [accounts, setAccounts] = useState<KioskAccount[]>([]);
   const [selected, setSelected] = useState<KioskAccount | null>(null);
+  const [editing, setEditing] = useState<KioskAccount | null>(null);
   const [q, setQ] = useState("");
   const [creating, setCreating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -27,17 +28,39 @@ export function AccountsPanel() {
     },
     [accounts, q],
   );
-  async function save(e: FormEvent<HTMLFormElement>, a: KioskAccount) {
+  async function updateAccount(e: FormEvent<HTMLFormElement>, account: KioskAccount) {
     e.preventDefault();
-    const d = new FormData(e.currentTarget);
-    await request(`/api/kiosk-accounts/${a.id}/`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        expires_at: new Date(String(d.get("expires_at"))).toISOString(),
-        is_active: d.get("is_active") === "on",
-      }),
-    });
-    void load();
+    const data = new FormData(e.currentTarget);
+    const password = String(data.get("password") ?? "");
+    const passwordConfirm = String(data.get("password_confirm") ?? "");
+    if (password !== passwordConfirm) {
+      setError("새 비밀번호가 서로 일치하지 않습니다.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      const payload: Record<string, string | boolean> = {
+        username: String(data.get("username") ?? "").trim(),
+        nickname: String(data.get("nickname") ?? "").trim(),
+        organization_name: String(data.get("organization_name") ?? "").trim(),
+        manager_phone: String(data.get("manager_phone") ?? "").trim(),
+        expires_at: new Date(String(data.get("expires_at"))).toISOString(),
+        is_active: data.get("is_active") === "on",
+      };
+      if (password) payload.password = password;
+      const updated = await request<KioskAccount>(`/api/kiosk-accounts/${account.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      await load();
+      setEditing(null);
+      setMessage(`${updated.username} 계정 정보를 수정했습니다.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "계정 정보를 수정하지 못했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   }
   async function createAccount(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -75,6 +98,36 @@ export function AccountsPanel() {
   }
   if (selected) {
     return <AccountDetailPanel account={selected} onBack={() => setSelected(null)} />;
+  }
+  if (editing) {
+    return (
+      <section className="mx-auto max-w-2xl rounded-3xl bg-white p-6 shadow-sm sm:p-9">
+        <button className="mb-7 font-bold text-slate-500 hover:text-slate-900" onClick={() => { setEditing(null); setError(""); }} type="button">
+          ← 회원 계정 목록
+        </button>
+        <div className="mb-8">
+          <p className="text-sm font-bold text-emerald-700">KIOSK ACCOUNT</p>
+          <h3 className="mt-1 text-2xl font-black">회원 계정 정보 수정</h3>
+          <p className="mt-2 text-sm text-slate-500">기본 정보와 이용 상태를 수정합니다. 비밀번호는 변경할 때만 입력하세요.</p>
+        </div>
+        {error ? <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p> : null}
+        <form className="space-y-5" onSubmit={(e) => void updateAccount(e, editing)}>
+          <label className="block"><span className="mb-2 block text-sm font-bold">로그인 아이디</span><input autoComplete="username" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.username} minLength={3} name="username" required /></label>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="block"><span className="mb-2 block text-sm font-bold">별명</span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.nickname} maxLength={50} name="nickname" required /></label>
+            <label className="block"><span className="mb-2 block text-sm font-bold">기관명</span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.organization_name} maxLength={120} name="organization_name" required /></label>
+          </div>
+          <label className="block"><span className="mb-2 block text-sm font-bold">담당자 전화번호</span><input autoComplete="tel" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.manager_phone} maxLength={20} minLength={7} name="manager_phone" pattern="[0-9+()\- ]{7,20}" required type="tel" /></label>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="block"><span className="mb-2 block text-sm font-bold">새 비밀번호</span><input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={4} name="password" placeholder="변경하지 않으면 비워두세요" type="password" /></label>
+            <label className="block"><span className="mb-2 block text-sm font-bold">새 비밀번호 확인</span><input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={4} name="password_confirm" placeholder="새 비밀번호 확인" type="password" /></label>
+          </div>
+          <label className="block"><span className="mb-2 block text-sm font-bold">이용 만료일</span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.expires_at.slice(0, 10)} name="expires_at" required type="date" /></label>
+          <label className="flex items-center gap-3 rounded-xl bg-slate-50 p-4 font-bold"><input defaultChecked={editing.is_active} name="is_active" type="checkbox" /> 계정 사용</label>
+          <button className="w-full rounded-xl bg-forest px-5 py-4 text-lg font-black text-white hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-60" disabled={submitting} type="submit">{submitting ? "저장 중..." : "수정 내용 저장"}</button>
+        </form>
+      </section>
+    );
   }
   if (creating) {
     return (
@@ -185,27 +238,7 @@ export function AccountsPanel() {
                     : "-"}
                 </td>
                 <td className="p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <form className="flex gap-2" onSubmit={(e) => void save(e, a)}>
-                    <input
-                      className="rounded border p-1"
-                      name="expires_at"
-                      type="date"
-                      defaultValue={a.expires_at.slice(0, 10)}
-                    />
-                    <label>
-                      <input
-                        name="is_active"
-                        type="checkbox"
-                        defaultChecked={a.is_active}
-                      />{" "}
-                      사용
-                    </label>
-                    <button className="rounded bg-forest px-3 py-1 text-white">
-                      저장
-                    </button>
-                    </form>
-                  </div>
+                  <button className="whitespace-nowrap rounded-lg border border-slate-300 px-3 py-2 font-bold hover:bg-slate-50" onClick={() => { setEditing(a); setError(""); setMessage(""); }} type="button">정보 수정</button>
                 </td>
               </tr>
             ))}
