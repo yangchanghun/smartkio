@@ -15,12 +15,12 @@ class OrderSerializer(serializers.ModelSerializer):
 class KioskAccountSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", max_length=150)
     password = serializers.CharField(write_only=True, required=False, min_length=4)
-    nickname = serializers.CharField(max_length=50, required=True, allow_blank=False)
-    organization_name = serializers.CharField(max_length=120, required=True, allow_blank=False)
+    nickname = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    organization_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
     manager_phone = serializers.RegexField(
         regex=r"^[0-9+()\-\s]{7,20}$",
-        required=True,
-        allow_blank=False,
+        required=False,
+        allow_blank=True,
         error_messages={"invalid": "담당자 전화번호를 확인해 주세요."},
     )
     class Meta:

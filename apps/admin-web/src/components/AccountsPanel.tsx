@@ -114,10 +114,10 @@ export function AccountsPanel() {
         <form className="space-y-5" onSubmit={(e) => void updateAccount(e, editing)}>
           <label className="block"><span className="mb-2 block text-sm font-bold">로그인 아이디</span><input autoComplete="username" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.username} minLength={3} name="username" required /></label>
           <div className="grid gap-5 sm:grid-cols-2">
-            <label className="block"><span className="mb-2 block text-sm font-bold">별명</span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.nickname} maxLength={50} name="nickname" required /></label>
-            <label className="block"><span className="mb-2 block text-sm font-bold">기관명</span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.organization_name} maxLength={120} name="organization_name" required /></label>
+            <label className="block"><span className="mb-2 block text-sm font-bold">별명 <span className="font-normal text-slate-400">(선택)</span></span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.nickname} maxLength={50} name="nickname" /></label>
+            <label className="block"><span className="mb-2 block text-sm font-bold">기관명 <span className="font-normal text-slate-400">(선택)</span></span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.organization_name} maxLength={120} name="organization_name" /></label>
           </div>
-          <label className="block"><span className="mb-2 block text-sm font-bold">담당자 전화번호</span><input autoComplete="tel" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.manager_phone} maxLength={20} minLength={7} name="manager_phone" pattern="[0-9+()\- ]{7,20}" required type="tel" /></label>
+          <label className="block"><span className="mb-2 block text-sm font-bold">담당자 전화번호 <span className="font-normal text-slate-400">(선택)</span></span><input autoComplete="tel" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.manager_phone} maxLength={20} name="manager_phone" pattern="[0-9+()\- ]{7,20}" type="tel" /></label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block"><span className="mb-2 block text-sm font-bold">새 비밀번호</span><input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={4} name="password" placeholder="변경하지 않으면 비워두세요" type="password" /></label>
             <label className="block"><span className="mb-2 block text-sm font-bold">새 비밀번호 확인</span><input autoComplete="new-password" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" minLength={4} name="password_confirm" placeholder="새 비밀번호 확인" type="password" /></label>
@@ -148,17 +148,17 @@ export function AccountsPanel() {
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-sm font-bold">별명</span>
-              <input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={50} name="nickname" placeholder="예: 밀양복지관 1호" required />
+              <span className="mb-2 block text-sm font-bold">별명 <span className="font-normal text-slate-400">(선택)</span></span>
+              <input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={50} name="nickname" placeholder="예: 밀양복지관 1호" />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-bold">기관명</span>
-              <input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={120} name="organization_name" placeholder="예: 밀양시 노인복지관" required />
+              <span className="mb-2 block text-sm font-bold">기관명 <span className="font-normal text-slate-400">(선택)</span></span>
+              <input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={120} name="organization_name" placeholder="예: 밀양시 노인복지관" />
             </label>
           </div>
           <label className="block">
-            <span className="mb-2 block text-sm font-bold">담당자 전화번호</span>
-            <input autoComplete="tel" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={20} minLength={7} name="manager_phone" pattern="[0-9+()\- ]{7,20}" placeholder="예: 010-1234-5678" required type="tel" />
+            <span className="mb-2 block text-sm font-bold">담당자 전화번호 <span className="font-normal text-slate-400">(선택)</span></span>
+            <input autoComplete="tel" className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" maxLength={20} name="manager_phone" pattern="[0-9+()\- ]{7,20}" placeholder="예: 010-1234-5678" type="tel" />
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">

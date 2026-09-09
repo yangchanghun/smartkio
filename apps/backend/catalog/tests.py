@@ -93,6 +93,28 @@ class ApiTests(TestCase):
         self.assertEqual(account.manager_phone, "055-123-4567")
         self.assertTrue(account.user.check_password("new-password"))
 
+    def test_admin_can_create_and_update_account_with_optional_profile_fields(self):
+        client = self.authenticated_admin()
+        created = client.post(
+            "/api/kiosk-accounts/",
+            {
+                "username": "minimal-account",
+                "password": "1234",
+                "expires_at": (timezone.now() + timedelta(days=30)).isoformat(),
+                "is_active": True,
+            },
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.data["nickname"], "")
+        updated = client.patch(
+            f"/api/kiosk-accounts/{created.data['id']}/",
+            {"organization_name": "기관만 입력"},
+            format="json",
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.data["organization_name"], "기관만 입력")
+
     def authenticated_kiosk(self):
         client = APIClient()
         token = client.post("/api/kiosk/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]
