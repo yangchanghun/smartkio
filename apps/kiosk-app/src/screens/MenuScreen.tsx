@@ -86,6 +86,16 @@ export function MenuScreen({
         numColumns={columns}
         keyExtractor={([id]) => id}
         contentContainerStyle={[s.grid, { padding: gridPadding }]}
+        ListFooterComponent={
+          <View style={s.partnerFooter}>
+            <Image
+              source={require("../../assets/branding/rhea-vision-contact.png")}
+              style={s.partnerImage}
+              resizeMode="contain"
+              accessibilityLabel="RHEA VISION 제품문의 1644-4907"
+            />
+          </View>
+        }
         renderItem={({ item: [id, title, color] }) => (
           <Pressable
             style={[
@@ -109,9 +119,9 @@ export function MenuScreen({
                           ? onStartKtx
                           : id === "flight"
                             ? onStartFlight
-                          : id === "pay"
-                            ? onStartKakaoPay
-                        : undefined
+                            : id === "pay"
+                              ? onStartKakaoPay
+                              : undefined
             }
           >
             <View
@@ -167,7 +177,9 @@ export function MenuScreen({
                   <Text style={s.payWord}>pay</Text>
                 </View>
               ) : id === "flight" ? (
-                <View style={s.payIcon}><Text style={{fontSize:54}}>✈️</Text></View>
+                <View style={s.payIcon}>
+                  <Text style={{ fontSize: 54 }}>✈️</Text>
+                </View>
               ) : null}
             </View>
             <Text
@@ -179,7 +191,7 @@ export function MenuScreen({
                 id === "pay" && s.dark,
                 id === "gov24" && s.govTitle,
                 id === "ktx" && s.ktxTitle,
-                id === "flight" && {color:"white"},
+                id === "flight" && { color: "white" },
               ]}
             >
               {title}
@@ -248,6 +260,16 @@ const s = StyleSheet.create({
   logout: { marginTop: 7, fontWeight: "800" },
   logoutMobile: { marginTop: 0, padding: 7, fontSize: 12 },
   grid: { paddingBottom: 24 },
+  partnerFooter: {
+    width: "86%",
+    alignItems: "center",
+    paddingTop: 18,
+    paddingBottom: 0,
+  },
+  partnerImage: {
+    width: "100%",
+    aspectRatio: 622 / 224,
+  },
   card: {
     minHeight: 275,
     borderRadius: 20,
@@ -326,7 +348,16 @@ const s = StyleSheet.create({
   ktxIconCompact: { width: 90, height: 90, borderRadius: 18 },
   ktxIconMobile: { width: 66, height: 66, borderRadius: 14 },
   ktxTitle: { color: "#172b45" },
-  payIcon: { width: 94, height: 78, borderRadius: 22, backgroundColor: "white", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  payIcon: {
+    width: 94,
+    height: 78,
+    borderRadius: 22,
+    backgroundColor: "white",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
   payBubble: { color: "#cbb9ff", fontSize: 26 },
   payWord: { color: "#111", fontSize: 27, fontWeight: "900" },
 });

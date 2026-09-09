@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Image,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -13,8 +14,8 @@ export function LoginScreen({
 }: {
   onLogin: (s: Session) => Promise<void>;
 }) {
-  const [u, setU] = useState("sp1"),
-    [p, setP] = useState("1234"),
+  const [u, setU] = useState(""),
+    [p, setP] = useState(""),
     [e, setE] = useState("");
   const submit = async () => {
     try {
@@ -46,8 +47,14 @@ export function LoginScreen({
         <Pressable style={s.btn} onPress={submit}>
           <Text style={s.btnText}>로그인</Text>
         </Pressable>
-        <Text style={s.error}>{e || "예시 계정 sp1 / 1234"}</Text>
+        {e ? <Text style={s.error}>{e}</Text> : null}
       </View>
+      <Image
+        source={require("../../assets/branding/rhea-vision-contact.png")}
+        style={s.partnerImage}
+        resizeMode="contain"
+        accessibilityLabel="RHEA VISION 제품문의 1644-4907"
+      />
     </SafeAreaView>
   );
 }
@@ -85,4 +92,10 @@ const s = StyleSheet.create({
   },
   btnText: { fontWeight: "900", fontSize: 17, color: "#3c1e1e" },
   error: { marginTop: 14, color: "#766d65" },
+  partnerImage: {
+    position: "absolute",
+    bottom: 24,
+    width: "86%",
+    aspectRatio: 622 / 224,
+  },
 });
