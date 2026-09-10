@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Image,
-  Keyboard,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -17,22 +16,7 @@ export function LoginScreen({
 }) {
   const [u, setU] = useState(""),
     [p, setP] = useState(""),
-    [e, setE] = useState(""),
-    [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", (event) =>
-      setKeyboardHeight(event.endCoordinates.height),
-    );
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () =>
-      setKeyboardHeight(0),
-    );
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
+    [e, setE] = useState("");
   const submit = async () => {
     try {
       setE("");
@@ -67,10 +51,7 @@ export function LoginScreen({
       </View>
       <Image
         source={require("../../assets/branding/rhea-vision-contact.png")}
-        style={[
-          s.partnerImage,
-          keyboardHeight > 0 && { bottom: 24 - keyboardHeight },
-        ]}
+        style={s.partnerImage}
         resizeMode="contain"
         accessibilityLabel="RHEA VISION 제품문의 1644-4907"
       />
