@@ -57,9 +57,6 @@ export function MenuScreen({
   const cardMargin = isMobile ? 5 : 9;
   const cardWidth =
     (width - gridPadding * 2 - cardMargin * 2 * columns) / columns;
-  const partnerColumnSpan = isMobile ? 2 : 3;
-  const partnerWidth =
-    cardWidth * partnerColumnSpan + cardMargin * 2 * (partnerColumnSpan - 1);
   const expiry = new Date(session.expires_at).toLocaleDateString("ko-KR");
   return (
     <SafeAreaView style={s.page}>
@@ -93,7 +90,7 @@ export function MenuScreen({
           <View style={s.partnerFooter}>
             <Image
               source={require("../../assets/branding/rhea-vision-contact.png")}
-              style={[s.partnerImage, { width: partnerWidth }]}
+              style={[s.partnerImage, !isMobile && s.partnerImageKiosk]}
               resizeMode="contain"
               accessibilityLabel="RHEA VISION 제품문의 1644-4907"
             />
@@ -270,7 +267,11 @@ const s = StyleSheet.create({
     paddingBottom: 0,
   },
   partnerImage: {
+    width: "100%",
     aspectRatio: 622 / 224,
+  },
+  partnerImageKiosk: {
+    transform: [{ scale: 1.22 }],
   },
   card: {
     minHeight: 275,
