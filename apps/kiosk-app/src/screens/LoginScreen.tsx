@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
+  Keyboard,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -16,7 +17,22 @@ export function LoginScreen({
 }) {
   const [u, setU] = useState(""),
     [p, setP] = useState(""),
-    [e, setE] = useState("");
+    [e, setE] = useState(""),
+    [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboardVisible(true),
+    );
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardVisible(false),
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
   const submit = async () => {
     try {
       setE("");
@@ -49,12 +65,14 @@ export function LoginScreen({
         </Pressable>
         {e ? <Text style={s.error}>{e}</Text> : null}
       </View>
-      <Image
-        source={require("../../assets/branding/rhea-vision-contact.png")}
-        style={s.partnerImage}
-        resizeMode="contain"
-        accessibilityLabel="RHEA VISION 제품문의 1644-4907"
-      />
+      {!keyboardVisible ? (
+        <Image
+          source={require("../../assets/branding/rhea-vision-contact.png")}
+          style={s.partnerImage}
+          resizeMode="contain"
+          accessibilityLabel="RHEA VISION 제품문의 1644-4907"
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
