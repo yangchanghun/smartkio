@@ -18,14 +18,14 @@ export function LoginScreen({
   const [u, setU] = useState(""),
     [p, setP] = useState(""),
     [e, setE] = useState(""),
-    [keyboardVisible, setKeyboardVisible] = useState(false);
+    [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () =>
-      setKeyboardVisible(true),
+    const showSubscription = Keyboard.addListener("keyboardDidShow", (event) =>
+      setKeyboardHeight(event.endCoordinates.height),
     );
     const hideSubscription = Keyboard.addListener("keyboardDidHide", () =>
-      setKeyboardVisible(false),
+      setKeyboardHeight(0),
     );
 
     return () => {
@@ -65,14 +65,15 @@ export function LoginScreen({
         </Pressable>
         {e ? <Text style={s.error}>{e}</Text> : null}
       </View>
-      {!keyboardVisible ? (
-        <Image
-          source={require("../../assets/branding/rhea-vision-contact.png")}
-          style={s.partnerImage}
-          resizeMode="contain"
-          accessibilityLabel="RHEA VISION 제품문의 1644-4907"
-        />
-      ) : null}
+      <Image
+        source={require("../../assets/branding/rhea-vision-contact.png")}
+        style={[
+          s.partnerImage,
+          keyboardHeight > 0 && { bottom: 24 - keyboardHeight },
+        ]}
+        resizeMode="contain"
+        accessibilityLabel="RHEA VISION 제품문의 1644-4907"
+      />
     </SafeAreaView>
   );
 }
