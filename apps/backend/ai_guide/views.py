@@ -1,5 +1,11 @@
 import base64
+import io
 import json
+import math
+import re
+import subprocess
+import wave
+from array import array
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -63,6 +69,53 @@ FALLBACK = {
     "target_ids": ["destination_search", "taxi_service"],
 }
 
+MINIMUM_MEAN_VOLUME_DB = -50.0
+
+
+def _has_audible_signal(audio_bytes, mime_type):
+    """Reject silence before Gemini gets a chance to invent a transcript."""
+    if mime_type in {"audio/wav", "audio/x-wav", "audio/wave"}:
+        try:
+            with wave.open(io.BytesIO(audio_bytes), "rb") as wav_file:
+                if wav_file.getsampwidth() != 2:
+                    return None
+                samples = array("h", wav_file.readframes(wav_file.getnframes()))
+                if not samples:
+                    return False
+                mean_square = sum(sample * sample for sample in samples) / len(samples)
+                rms = math.sqrt(mean_square)
+                mean_volume_db = 20 * math.log10(max(rms, 1) / 32768)
+                return mean_volume_db > MINIMUM_MEAN_VOLUME_DB
+        except (EOFError, wave.Error):
+            return None
+
+    try:
+        completed = subprocess.run(
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-nostdin",
+                "-i",
+                "pipe:0",
+                "-af",
+                "volumedetect",
+                "-f",
+                "null",
+                "-",
+            ],
+            input=audio_bytes,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            timeout=10,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    match = re.search(rb"mean_volume:\s*(-?\d+(?:\.\d+)?)\s*dB", completed.stderr)
+    if not match:
+        return None
+    return float(match.group(1)) > MINIMUM_MEAN_VOLUME_DB
+
 CLASSIFIER_PROMPT = """
 당신은 교육용 SmartKio 앱의 카카오T 첫 화면 음성 안내 분류기입니다.
 첨부된 한국어 음성을 정확히 받아쓰고, 아래 의도 중 정확히 하나로 분류하세요.
@@ -89,12 +142,18 @@ has_speech를 false로, transcript를 빈 문자열로 반환하세요. 절대�
 def _gemini_result(audio_bytes, mime_type):
     model = settings.GEMINI_MODEL
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    payload = {
+    transcription_payload = {
         "contents": [
             {
                 "role": "user",
                 "parts": [
-                    {"text": CLASSIFIER_PROMPT},
+                    {
+                        "text": (
+                            "You are a strict audio transcription detector. Ignore all app context. "
+                            "If no clearly intelligible human words are audible, return exactly SILENCE. "
+                            "Never guess or invent words. Otherwise return only the exact spoken transcript."
+                        )
+                    },
                     {
                         "inlineData": {
                             "mimeType": mime_type,
@@ -104,17 +163,41 @@ def _gemini_result(audio_bytes, mime_type):
                 ],
             }
         ],
+        "generationConfig": {"temperature": 0},
+    }
+    transcription_request = Request(
+        url,
+        data=json.dumps(transcription_payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": settings.GEMINI_API_KEY,
+        },
+        method="POST",
+    )
+    with urlopen(transcription_request, timeout=20) as upstream_response:
+        transcription_result = json.loads(upstream_response.read().decode("utf-8"))
+    transcript = transcription_result["candidates"][0]["content"]["parts"][0]["text"].strip()
+    if not transcript or transcript.upper() == "SILENCE":
+        return {"has_speech": False, "transcript": "", "intent": "unrelated_or_unsupported"}
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": f"{CLASSIFIER_PROMPT}\n\n사용자 음성의 정확한 전사문:\n{transcript}"},
+                ],
+            }
+        ],
         "generationConfig": {
             "temperature": 0,
             "responseMimeType": "application/json",
             "responseJsonSchema": {
                 "type": "object",
                 "properties": {
-                    "has_speech": {"type": "boolean"},
-                    "transcript": {"type": "string"},
                     "intent": {"type": "string", "enum": list(SCENARIOS.keys())},
                 },
-                "required": ["has_speech", "transcript", "intent"],
+                "required": ["intent"],
                 "additionalProperties": False,
             },
         },
@@ -131,7 +214,8 @@ def _gemini_result(audio_bytes, mime_type):
     with urlopen(upstream_request, timeout=20) as upstream_response:
         result = json.loads(upstream_response.read().decode("utf-8"))
     text = result["candidates"][0]["content"]["parts"][0]["text"]
-    return json.loads(text)
+    classified = json.loads(text)
+    return {"has_speech": True, "transcript": transcript, "intent": classified["intent"]}
 
 
 @api_view(["POST"])
@@ -154,8 +238,19 @@ def kakao_t_home_voice(request):
     if not mime_type.startswith("audio/"):
         return Response({"detail": "지원하지 않는 음성 파일입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+    audio_bytes = audio.read()
+    if _has_audible_signal(audio_bytes, mime_type) is False:
+        return Response(
+            {
+                "transcript": "",
+                "intent": "no_speech",
+                "answer": "목소리가 들리지 않았어요. 마이크 가까이에서 다시 말씀해 주세요.",
+                "targetIds": [],
+            }
+        )
+
     try:
-        classified = _gemini_result(audio.read(), mime_type)
+        classified = _gemini_result(audio_bytes, mime_type)
     except HTTPError as error:
         if error.code in (401, 403):
             detail = "Gemini API 키 또는 결제 설정을 확인해 주세요."
