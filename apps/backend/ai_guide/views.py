@@ -78,7 +78,10 @@ CLASSIFIER_PROMPT = """
 - greeting: 인사하거나 질문 가능한지 묻는다
 - unrelated_or_unsupported: 현재 카카오T 택시 호출 연습과 관련 없는 질문이다
 
-추측하지 마세요. 말이 없거나 알아듣기 어렵다면 intent를 unrelated_or_unsupported로 반환하세요.
+먼저 실제 사람의 알아들을 수 있는 말소리가 있는지 판정하세요.
+무음, 잡음, 기계음, 앱 안내음만 있거나 사람의 말을 확실히 알아들을 수 없다면
+has_speech를 false로, transcript를 빈 문자열로 반환하세요. 절대로 문장을 추측하거나 만들어내지 마세요.
+사람의 질문이 명확히 들릴 때만 has_speech를 true로 반환하고 의도를 분류하세요.
 출력은 제공된 JSON 스키마를 반드시 따르세요.
 """.strip()
 
@@ -107,10 +110,11 @@ def _gemini_result(audio_bytes, mime_type):
             "responseJsonSchema": {
                 "type": "object",
                 "properties": {
+                    "has_speech": {"type": "boolean"},
                     "transcript": {"type": "string"},
                     "intent": {"type": "string", "enum": list(SCENARIOS.keys())},
                 },
-                "required": ["transcript", "intent"],
+                "required": ["has_speech", "transcript", "intent"],
                 "additionalProperties": False,
             },
         },
@@ -166,12 +170,23 @@ def kakao_t_home_voice(request):
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
+    transcript = str(classified.get("transcript", "")).strip()
+    if not classified.get("has_speech") or not transcript:
+        return Response(
+            {
+                "transcript": "",
+                "intent": "no_speech",
+                "answer": "목소리가 들리지 않았어요. 마이크 가까이에서 다시 말씀해 주세요.",
+                "targetIds": [],
+            }
+        )
+
     intent = classified.get("intent", "unrelated_or_unsupported")
     scenario = SCENARIOS.get(intent, FALLBACK)
     target_ids = [target for target in scenario["target_ids"] if target in VALID_TARGETS]
     return Response(
         {
-            "transcript": str(classified.get("transcript", "")).strip(),
+            "transcript": transcript,
             "intent": intent if intent in SCENARIOS else "fallback",
             "answer": scenario["answer"],
             "targetIds": target_ids,
