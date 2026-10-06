@@ -1,0 +1,179 @@
+import base64
+import json
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+from django.conf import settings
+from rest_framework import status
+from rest_framework.decorators import api_view, parser_classes, permission_classes
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
+
+from catalog.views import KioskSessionPermission
+
+
+MAX_AUDIO_BYTES = 4 * 1024 * 1024
+VALID_TARGETS = {"destination_search", "taxi_service"}
+
+SCENARIOS = {
+    "call_taxi_now": {
+        "answer": "택시를 호출하려면 어디로 갈까요 버튼을 눌러 출발지와 목적지를 입력해 주세요. 아래의 택시 버튼을 눌러도 같은 연습을 시작할 수 있어요.",
+        "target_ids": ["destination_search", "taxi_service"],
+    },
+    "vague_start_help": {
+        "answer": "택시 호출 연습을 시작하려면 어디로 갈까요 또는 택시 버튼을 눌러주세요.",
+        "target_ids": ["destination_search", "taxi_service"],
+    },
+    "ask_destination_search": {
+        "answer": "어디로 갈까요 버튼을 누르면 출발지와 목적지를 정하는 화면으로 이동해요.",
+        "target_ids": ["destination_search"],
+    },
+    "ask_taxi_service": {
+        "answer": "택시 버튼을 누르면 택시 호출 연습을 시작할 수 있어요.",
+        "target_ids": ["taxi_service"],
+    },
+    "ask_taxi_reservation": {
+        "answer": "택시예약 기능은 현재 연습에서 지원하지 않아요. 지금 택시를 부르는 연습은 어디로 갈까요 또는 택시 버튼을 눌러 시작해 주세요.",
+        "target_ids": ["destination_search", "taxi_service"],
+    },
+    "ask_inactive_service": {
+        "answer": "그 기능은 현재 연습에서 지원하지 않아요. 이 화면에서는 어디로 갈까요 또는 택시 버튼으로 택시 호출을 연습할 수 있어요.",
+        "target_ids": ["destination_search", "taxi_service"],
+    },
+    "explain_app": {
+        "answer": "스마트키오는 스마트폰 앱 사용법을 안전하게 연습하는 교육용 앱이에요. 이 화면에서는 실제 택시를 부르지 않고 카카오T 택시 호출 과정을 연습할 수 있어요.",
+        "target_ids": [],
+    },
+    "ask_cost_or_eta": {
+        "answer": "요금과 예상 시간은 목적지를 정한 다음 확인할 수 있어요. 먼저 어디로 갈까요 버튼을 눌러주세요.",
+        "target_ids": ["destination_search"],
+    },
+    "greeting": {
+        "answer": "안녕하세요. 카카오T 택시 호출 연습을 도와드릴게요. 궁금한 점을 말씀해 주세요.",
+        "target_ids": [],
+    },
+    "unrelated_or_unsupported": {
+        "answer": "현재는 카카오T 택시 호출 연습과 관련된 질문만 안내해 드릴 수 있어요. 택시를 부르려면 어디로 갈까요 또는 택시 버튼을 눌러주세요.",
+        "target_ids": ["destination_search", "taxi_service"],
+    },
+}
+
+FALLBACK = {
+    "answer": "질문을 정확히 이해하지 못했어요. 택시를 부르는 방법처럼 이 화면에서 궁금한 내용을 다시 말씀해 주세요.",
+    "target_ids": ["destination_search", "taxi_service"],
+}
+
+CLASSIFIER_PROMPT = """
+당신은 교육용 SmartKio 앱의 카카오T 첫 화면 음성 안내 분류기입니다.
+첨부된 한국어 음성을 정확히 받아쓰고, 아래 의도 중 정확히 하나로 분류하세요.
+
+- call_taxi_now: 지금 택시를 호출하거나 특정 장소로 가고 싶다
+- vague_start_help: 무엇을 눌러야 하는지, 어떻게 시작하는지 막연하게 묻는다
+- ask_destination_search: '어디로 갈까요', 출발지 또는 목적지 입력 방법을 묻는다
+- ask_taxi_service: 택시 버튼의 기능을 묻는다
+- ask_taxi_reservation: 택시 예약 또는 미리 부르기를 묻는다
+- ask_inactive_service: 렌터카, 바이크, 기차, 버스 등 지원하지 않는 기능을 묻는다
+- explain_app: SmartKio 또는 이 연습 앱의 기능과 목적을 묻는다
+- ask_cost_or_eta: 택시 요금, 도착 시간 또는 소요 시간을 묻는다
+- greeting: 인사하거나 질문 가능한지 묻는다
+- unrelated_or_unsupported: 현재 카카오T 택시 호출 연습과 관련 없는 질문이다
+
+추측하지 마세요. 말이 없거나 알아듣기 어렵다면 intent를 unrelated_or_unsupported로 반환하세요.
+출력은 제공된 JSON 스키마를 반드시 따르세요.
+""".strip()
+
+
+def _gemini_result(audio_bytes, mime_type):
+    model = settings.GEMINI_MODEL
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": CLASSIFIER_PROMPT},
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": base64.b64encode(audio_bytes).decode("ascii"),
+                        }
+                    },
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0,
+            "responseMimeType": "application/json",
+            "responseJsonSchema": {
+                "type": "object",
+                "properties": {
+                    "transcript": {"type": "string"},
+                    "intent": {"type": "string", "enum": list(SCENARIOS.keys())},
+                },
+                "required": ["transcript", "intent"],
+                "additionalProperties": False,
+            },
+        },
+    }
+    upstream_request = Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": settings.GEMINI_API_KEY,
+        },
+        method="POST",
+    )
+    with urlopen(upstream_request, timeout=20) as upstream_response:
+        result = json.loads(upstream_response.read().decode("utf-8"))
+    text = result["candidates"][0]["content"]["parts"][0]["text"]
+    return json.loads(text)
+
+
+@api_view(["POST"])
+@permission_classes([KioskSessionPermission])
+@parser_classes([MultiPartParser])
+def kakao_t_home_voice(request):
+    if not settings.GEMINI_API_KEY:
+        return Response(
+            {"detail": "Gemini API 키가 아직 설정되지 않았습니다."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    audio = request.FILES.get("audio")
+    if not audio:
+        return Response({"detail": "음성 파일이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+    if audio.size > MAX_AUDIO_BYTES:
+        return Response({"detail": "음성 질문은 4MB 이하로 녹음해 주세요."}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+    mime_type = audio.content_type or "audio/mp4"
+    if not mime_type.startswith("audio/"):
+        return Response({"detail": "지원하지 않는 음성 파일입니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        classified = _gemini_result(audio.read(), mime_type)
+    except HTTPError as error:
+        if error.code in (401, 403):
+            detail = "Gemini API 키 또는 결제 설정을 확인해 주세요."
+        elif error.code == 429:
+            detail = "Gemini 사용 한도를 초과했습니다. 잠시 후 다시 시도해 주세요."
+        else:
+            detail = "Gemini가 음성 질문을 처리하지 못했습니다."
+        return Response({"detail": detail}, status=status.HTTP_502_BAD_GATEWAY)
+    except (URLError, TimeoutError, KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError):
+        return Response(
+            {"detail": "음성 인식 서버에 연결하지 못했습니다."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    intent = classified.get("intent", "unrelated_or_unsupported")
+    scenario = SCENARIOS.get(intent, FALLBACK)
+    target_ids = [target for target in scenario["target_ids"] if target in VALID_TARGETS]
+    return Response(
+        {
+            "transcript": str(classified.get("transcript", "")).strip(),
+            "intent": intent if intent in SCENARIOS else "fallback",
+            "answer": scenario["answer"],
+            "targetIds": target_ids,
+        }
+    )

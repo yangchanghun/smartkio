@@ -7,5 +7,6 @@ urlpatterns = [
     path("health/", health),
     path("api/delivery/", include("delivery.urls")),
     path("api/taxi/", include("taxi.urls")),
+    path("api/ai-guide/", include("ai_guide.urls")),
     path("api/", include("catalog.urls")),
 ]
