@@ -47,6 +47,7 @@ export function AccountsPanel() {
         manager_phone: String(data.get("manager_phone") ?? "").trim(),
         expires_at: new Date(String(data.get("expires_at"))).toISOString(),
         is_active: data.get("is_active") === "on",
+        allow_concurrent_login: data.get("allow_concurrent_login") === "on",
       };
       if (password) payload.password = password;
       const updated = await request<KioskAccount>(`/api/kiosk-accounts/${account.id}/`, {
@@ -84,6 +85,7 @@ export function AccountsPanel() {
           manager_phone: String(data.get("manager_phone") ?? "").trim(),
           expires_at: new Date(String(data.get("expires_at"))).toISOString(),
           is_active: true,
+          allow_concurrent_login: data.get("allow_concurrent_login") === "on",
         }),
       });
       await load();
@@ -94,6 +96,19 @@ export function AccountsPanel() {
       setError(reason instanceof Error ? reason.message : "계정을 만들지 못했습니다.");
     } finally {
       setSubmitting(false);
+    }
+  }
+  async function toggleConcurrentLogin(account: KioskAccount) {
+    setError("");
+    try {
+      const updated = await request<KioskAccount>(`/api/kiosk-accounts/${account.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ allow_concurrent_login: !account.allow_concurrent_login }),
+      });
+      await load();
+      setMessage(`${updated.username} 계정의 중복 접속을 ${updated.allow_concurrent_login ? "허용" : "차단"}했습니다.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "중복 접속 설정을 변경하지 못했습니다.");
     }
   }
   if (selected) {
@@ -124,6 +139,7 @@ export function AccountsPanel() {
           </div>
           <label className="block"><span className="mb-2 block text-sm font-bold">이용 만료일</span><input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" defaultValue={editing.expires_at.slice(0, 10)} name="expires_at" required type="date" /></label>
           <label className="flex items-center gap-3 rounded-xl bg-slate-50 p-4 font-bold"><input defaultChecked={editing.is_active} name="is_active" type="checkbox" /> 계정 사용</label>
+          <label className="flex items-center gap-3 rounded-xl bg-blue-50 p-4 font-bold text-blue-900"><input defaultChecked={editing.allow_concurrent_login} name="allow_concurrent_login" type="checkbox" /> 중복 접속 허용</label>
           <button className="w-full rounded-xl bg-forest px-5 py-4 text-lg font-black text-white hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-60" disabled={submitting} type="submit">{submitting ? "저장 중..." : "수정 내용 저장"}</button>
         </form>
       </section>
@@ -174,6 +190,7 @@ export function AccountsPanel() {
             <span className="mb-2 block text-sm font-bold">이용 만료일</span>
             <input className="w-full rounded-xl border border-slate-200 p-3.5 focus:border-emerald-600 focus:outline-none" min={new Date().toISOString().slice(0, 10)} name="expires_at" required type="date" />
           </label>
+          <label className="flex items-center gap-3 rounded-xl bg-blue-50 p-4 font-bold text-blue-900"><input name="allow_concurrent_login" type="checkbox" /> 중복 접속 허용</label>
           <button className="w-full rounded-xl bg-forest px-5 py-4 text-lg font-black text-white hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-60" disabled={submitting} type="submit">
             {submitting ? "계정 생성 중..." : "회원 계정 생성"}
           </button>
@@ -184,6 +201,7 @@ export function AccountsPanel() {
   return (
     <>
       {message ? <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-800">{message}</p> : null}
+      {error ? <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p> : null}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <input
           className="w-full max-w-sm rounded-xl border border-slate-200 p-3"
@@ -208,6 +226,7 @@ export function AccountsPanel() {
               <th>담당자 전화번호</th>
               <th>유효기간</th>
               <th>상태</th>
+              <th>중복 접속</th>
               <th>마지막 로그인</th>
               <th />
             </tr>
@@ -231,6 +250,15 @@ export function AccountsPanel() {
                   className={a.is_active ? "text-emerald-700" : "text-red-600"}
                 >
                   {a.is_active ? "사용" : "중지"}
+                </td>
+                <td>
+                  <button
+                    className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs font-black ${a.allow_concurrent_login ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-700 hover:bg-slate-300"}`}
+                    onClick={() => void toggleConcurrentLogin(a)}
+                    type="button"
+                  >
+                    {a.allow_concurrent_login ? "허용 중" : "허용하기"}
+                  </button>
                 </td>
                 <td>
                   {a.last_login_at

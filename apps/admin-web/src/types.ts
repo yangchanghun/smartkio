@@ -19,6 +19,7 @@ export type KioskAccount = {
   manager_phone: string;
   expires_at: string;
   is_active: boolean;
+  allow_concurrent_login: boolean;
   last_login_at: string | null;
 };
 

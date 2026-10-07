@@ -33,6 +33,7 @@ class KioskAccount(models.Model):
     manager_phone = models.CharField(max_length=20, blank=True, default="", verbose_name="담당자 전화번호")
     expires_at = models.DateTimeField()
     is_active = models.BooleanField(default=True)
+    allow_concurrent_login = models.BooleanField(default=False, verbose_name="중복 접속 허용")
     last_login_at = models.DateTimeField(null=True, blank=True)
     def __str__(self): return f"{self.user.username} ({self.expires_at:%Y-%m-%d})"
 
@@ -66,6 +67,7 @@ class PracticeSession(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     failure_reason = models.CharField(max_length=32, blank=True)
+    concurrent_login = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-started_at"]
@@ -83,8 +85,8 @@ class PracticeSession(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["account"],
-                condition=Q(status="IN_PROGRESS"),
-                name="one_active_practice_per_account",
+                condition=Q(status="IN_PROGRESS", concurrent_login=False),
+                name="one_exclusive_active_practice_per_account",
             ),
         ]
 

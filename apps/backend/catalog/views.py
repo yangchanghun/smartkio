@@ -37,10 +37,13 @@ def kiosk_login(request):
     account = getattr(user, "kiosk_account", None) if user else None
     if not account or not account.is_active or timezone.now() >= account.expires_at:
         return Response({"detail": "계정 정보 또는 이용 기간을 확인해주세요."}, status=status.HTTP_401_UNAUTHORIZED)
-    for session in PracticeSession.objects.filter(account=account, status="IN_PROGRESS"):
-        session.finish("FAILED", "LOGIN_REPLACED")
-    Token.objects.filter(user=user).delete()
-    token = Token.objects.create(user=user)
+    if account.allow_concurrent_login:
+        token, _ = Token.objects.get_or_create(user=user)
+    else:
+        for session in PracticeSession.objects.filter(account=account, status="IN_PROGRESS"):
+            session.finish("FAILED", "LOGIN_REPLACED")
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
     account.last_login_at = timezone.now()
     account.save(update_fields=["last_login_at"])
     return Response({"token": token.key, "username": user.username, "expires_at": account.expires_at})
@@ -149,10 +152,15 @@ class PracticeSessionViewSet(viewsets.ReadOnlyModelViewSet):
         valid_services = {value for value, _ in PracticeSession.SERVICE_CHOICES}
         if service not in valid_services:
             return Response({"detail": "연습 서비스 값을 확인해 주세요."}, status=status.HTTP_400_BAD_REQUEST)
-        previous = PracticeSession.objects.select_for_update().filter(account=account, status="IN_PROGRESS")
-        for session in previous:
-            session.finish("FAILED", "INTERRUPTED")
-        session = PracticeSession.objects.create(account=account, service=service)
+        if not account.allow_concurrent_login:
+            previous = PracticeSession.objects.select_for_update().filter(account=account, status="IN_PROGRESS")
+            for session in previous:
+                session.finish("FAILED", "INTERRUPTED")
+        session = PracticeSession.objects.create(
+            account=account,
+            service=service,
+            concurrent_login=account.allow_concurrent_login,
+        )
         return Response(self.get_serializer(session).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])

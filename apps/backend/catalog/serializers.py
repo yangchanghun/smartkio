@@ -25,7 +25,7 @@ class KioskAccountSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = KioskAccount
-        fields = ["id", "user", "username", "password", "nickname", "organization_name", "manager_phone", "expires_at", "is_active", "last_login_at"]
+        fields = ["id", "user", "username", "password", "nickname", "organization_name", "manager_phone", "expires_at", "is_active", "allow_concurrent_login", "last_login_at"]
         read_only_fields = ["user", "last_login_at"]
 
     def validate_username(self, value):

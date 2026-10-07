@@ -27,6 +27,17 @@ class ApiTests(TestCase):
         client.credentials(HTTP_AUTHORIZATION=f"Token {first}")
         self.assertEqual(client.get("/api/products/").status_code, 401)
 
+    def test_concurrent_login_keeps_existing_devices_authenticated(self):
+        account = self.user.kiosk_account
+        account.allow_concurrent_login = True
+        account.save(update_fields=["allow_concurrent_login"])
+        client = APIClient()
+        first = client.post("/api/kiosk/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]
+        second = client.post("/api/kiosk/auth/login/", {"username": "admin", "password": "password"}, format="json").data["token"]
+        self.assertEqual(first, second)
+        client.credentials(HTTP_AUTHORIZATION=f"Token {first}")
+        self.assertEqual(client.get("/api/products/").status_code, 200)
+
     def test_admin_login(self):
         client = APIClient()
         self.assertEqual(client.post("/api/auth/login/", {"username": "admin", "password": "password"}, format="json").status_code, 200)
@@ -156,6 +167,20 @@ class ApiTests(TestCase):
         self.assertEqual(previous.status, "FAILED")
         self.assertEqual(previous.failure_reason, "INTERRUPTED")
         self.assertIsNotNone(previous.duration_seconds)
+
+    def test_concurrent_account_can_run_multiple_practices(self):
+        account = self.user.kiosk_account
+        account.allow_concurrent_login = True
+        account.save(update_fields=["allow_concurrent_login"])
+        client = self.authenticated_kiosk()
+        first = client.post("/api/practice-sessions/start/", {"service": "DELIVERY"}, format="json")
+        second = client.post("/api/practice-sessions/start/", {"service": "TAXI"}, format="json")
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 201)
+        self.assertEqual(
+            PracticeSession.objects.filter(account=account, status="IN_PROGRESS").count(),
+            2,
+        )
 
     def test_abandon_marks_practice_as_failed(self):
         client = self.authenticated_kiosk()
